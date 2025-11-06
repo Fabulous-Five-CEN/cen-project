@@ -12,8 +12,6 @@ python app/scripts/test_seed_users.py
 echo "Seeding test cards..."
 python app/scripts/seed_cards.py 
 
-echo "Running application tests..."
-python -m app.tests.test_cards_routes
 
 echo "Starting application..."
 exec "$@"

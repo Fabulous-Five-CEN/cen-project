@@ -3,7 +3,7 @@ import requests
 from . import cards_bp
 from app import db
 from app.models import Card, User
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 LECTO_API_URL = "https://lecto-translation.p.rapidapi.com/v1/translate/text"
@@ -50,8 +50,8 @@ def new_card():
         notes=notes,
         is_starred=is_starred,
         user_id=user_id,
-        created_at=datetime.now(datetime.timezone.utc),
-        updated_at=datetime.now(datetime.timezone.utc)
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
     db.session.add(new_card)
@@ -70,17 +70,69 @@ def new_card():
         }
     }), 201
 
-@cards_bp.route("/edit")
-def edit_card():
-    return jsonify({"page": "Edit Card"})
 
-@cards_bp.route("/delete")
-def delete_card():
-    return jsonify({"page": "Delete Card"})
+@cards_bp.route("/edit/<int:card_id>", methods = ["PUT"])
+def edit_card(card_id):
+
+    data = request.get_json()
+
+    card = Card.query.get(card_id)
+    if not card:
+            return jsonify({"Error" : f"No card exists in database with id {card_id}"}), 404
+    
+
+    english_text = data.get("english_text")
+    spanish_text = data.get("spanish_text")
+    notes = data.get("notes")
+    is_starred = data.get("is_starred")
+
+    if english_text is not None:
+        card.english_text = english_text
+    if spanish_text is not None:
+        card.spanish_text = spanish_text
+    if notes is not None:
+        card.notes = notes
+    if is_starred is not None:
+        card.is_starred = is_starred
+
+    card.updated_at = datetime.now(timezone.utc)
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Card successfully updated",
+            "card": {
+                "id": card.id,
+                "english_text": card.english_text,
+                "spanish_text": card.spanish_text,
+                "notes": card.notes,
+                "is_starred": card.is_starred,
+                "user_id": card.user_id,
+                "updated_at": card.updated_at.isoformat(),
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update card: {str(e)}"}), 500
+    
+
+@cards_bp.route("/delete/<int:card_id>", methods = ["DELETE"])
+def delete_card(card_id):
+    card = Card.query.get(card_id)
+    if not card:
+        return jsonify({"error": f"No card found with id {card_id}"}), 404
+
+    try:
+        db.session.delete(card)
+        db.session.commit()
+        return jsonify({"message": f"Card with id {card_id} successfully deleted"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to delete card: {str(e)}"}), 500
 
 
 
-@cards_bp.route("/cards/auto-translate", methods=["POST"]) 
+@cards_bp.route("/auto-translate", methods=["POST"]) 
 def auto_translate():
     data = request.get_json()
     text = data.get('text')
