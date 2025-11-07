@@ -1,9 +1,14 @@
-import unittest
-import requests
+import os
 import time
+import unittest
 
-BASE_URL = "http://localhost:8025"  # backend running in docker
-USER_ID = 2  # Valid user_id in db
+import requests
+
+
+APP_PORT = os.environ.get("APP_PORT", "8025")
+BACKEND_HOST = os.environ.get("BACKEND_HOST", "http://localhost")
+BASE_URL = os.environ.get("CARDS_BASE_URL", f"{BACKEND_HOST}:{APP_PORT}")
+USER_ID = int(os.environ.get("TEST_USER_ID", "2"))  # Valid user_id in db
 
 
 class CardIntegrationTests(unittest.TestCase):
