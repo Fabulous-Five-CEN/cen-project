@@ -8,3 +8,5 @@ instance/
 venv/
 docker-compose.yml
 docker/local/
+.vscode/
+.vscode.*
