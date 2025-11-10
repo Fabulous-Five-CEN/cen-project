@@ -1,21 +1,51 @@
 from flask import jsonify, request
-import requests
 from . import sets_bp
-from app import db
-from app.models import Card, User, SetTable
+from app.extensions import db
+from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
-import os
 
+def serialize_set(set_obj):
+    """Converts a SetTable object into a JSON-friendly dictionary."""
+    return {
+        "id": set_obj.id,
+        "name": set_obj.name,
+        "description": set_obj.description,
+        "user_id": set_obj.user_id,
+        "card_count": len(set_obj.cards),
+        "created_at": set_obj.created_at.isoformat(),
+        "updated_at": set_obj.updated_at.isoformat()
+    }
 
-@sets_bp.route("/")
-def sets_home():
-    return jsonify({"page": "Sets"})
+@sets_bp.route("/", methods=["GET"])
+def get_all_sets():
+    """Gets all sets associated with a specific user_id."""
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "user_id query parameter is required"}), 400
 
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    all_sets = SetTable.query.filter_by(user_id=user_id).order_by(SetTable.created_at.desc()).all()
+    set_list = [serialize_set(s) for s in all_sets]
+    
+    return jsonify(set_list), 200
+
+@sets_bp.route("/<int:set_id>", methods=["GET"])
+def get_set_details(set_id):
+    """Gets details for a single set, including its cards."""
+    set_obj = SetTable.query.get_or_404(set_id)
+    set_data = serialize_set(set_obj)
+    set_data['cards'] = [
+        {"id": card.id, "english_text": card.english_text, "spanish_text": card.spanish_text}
+        for card in set_obj.cards
+    ]
+    return jsonify(set_data), 200
 
 @sets_bp.route("/new", methods=["POST"])
 def new_set():
     data = request.get_json() or {}
-
     name = data.get("name")
     description = data.get("description")
     user_id = data.get("user_id")
@@ -27,73 +57,46 @@ def new_set():
     if not user:
         return jsonify({"error": f"User with id {user_id} is not a registered user"}), 404
 
-    new_set = SetTable(
+    new_set_obj = SetTable(
         name=name,
         description=description,
-        user_id=user_id,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
+        user_id=user_id
     )
-
     try:
-        db.session.add(new_set)
+        db.session.add(new_set_obj)
         db.session.commit()
         return jsonify({
             "message": "Set successfully created in database",
-            "set": {
-                "id": new_set.id,
-                "name": new_set.name,
-                "description": new_set.description,
-                "user_id": new_set.user_id,
-                "created_at": new_set.created_at.isoformat(),
-            }
+            "set": serialize_set(new_set_obj)
         }), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to create set: {str(e)}"}), 500
 
-
 @sets_bp.route("/edit/<int:set_id>", methods=["PUT"])
 def edit_set(set_id):
     data = request.get_json() or {}
+    set_obj = SetTable.query.get_or_404(set_id)
 
-    set_obj = SetTable.query.get(set_id)
-    if not set_obj:
-        return jsonify({"error": f"No set exists in database with id {set_id}"}), 404
-
-    name = data.get("name")
-    description = data.get("description")
-
-    if name is not None:
-        set_obj.name = name
-    if description is not None:
-        set_obj.description = description
-
+    if "name" in data:
+        set_obj.name = data["name"]
+    if "description" in data:
+        set_obj.description = data["description"]
+    
     set_obj.updated_at = datetime.now(timezone.utc)
-
     try:
         db.session.commit()
         return jsonify({
             "message": "Set successfully updated",
-            "set": {
-                "id": set_obj.id,
-                "name": set_obj.name,
-                "description": set_obj.description,
-                "user_id": set_obj.user_id,
-                "updated_at": set_obj.updated_at.isoformat(),
-            }
+            "set": serialize_set(set_obj)
         }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to update set: {str(e)}"}), 500
 
-
 @sets_bp.route("/delete/<int:set_id>", methods=["DELETE"])
 def delete_set(set_id):
-    set_obj = SetTable.query.get(set_id)
-    if not set_obj:
-        return jsonify({"error": f"No set found with id {set_id}"}), 404
-
+    set_obj = SetTable.query.get_or_404(set_id)
     try:
         db.session.delete(set_obj)
         db.session.commit()
@@ -102,26 +105,21 @@ def delete_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to delete set: {str(e)}"}), 500
 
-
 @sets_bp.route("/add_card/<int:set_id>", methods=["POST"])
 def add_card_to_set(set_id):
     data = request.get_json() or {}
     card_ids = data.get("card_ids")
-
     if not card_ids:
         return jsonify({"error": "No card_ids provided"}), 400
 
-    set_obj = SetTable.query.get(set_id)
-    if not set_obj:
-        return jsonify({"error": f"No set found with id {set_id}"}), 404
-
-    # Ensure we can handle both single and multiple IDs
+    set_obj = SetTable.query.get_or_404(set_id)
+    
     if isinstance(card_ids, int):
         card_ids = [card_ids]
 
     cards = Card.query.filter(Card.id.in_(card_ids)).all()
-    if not cards:
-        return jsonify({"error": "No valid cards found for provided IDs"}), 404
+    if len(cards) != len(set(card_ids)):
+         return jsonify({"error": "One or more card IDs were not found"}), 404
 
     try:
         added_ids = []
@@ -129,7 +127,6 @@ def add_card_to_set(set_id):
             if card not in set_obj.cards:
                 set_obj.cards.append(card)
                 added_ids.append(card.id)
-
         db.session.commit()
         return jsonify({
             "message": f"{len(added_ids)} card(s) successfully added to set {set_id}",
@@ -139,20 +136,16 @@ def add_card_to_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to add cards to set: {str(e)}"}), 500
 
-
 @sets_bp.route("/delete_card/<int:set_id>", methods=["POST"])
 def delete_card_from_set(set_id):
     data = request.get_json() or {}
     card_id = data.get("card_id")
-
     if not card_id:
         return jsonify({"error": "Missing required field: card_id"}), 400
 
-    set_obj = SetTable.query.get(set_id)
-    if not set_obj:
-        return jsonify({"error": f"No set found with id {set_id}"}), 404
-
+    set_obj = SetTable.query.get_or_404(set_id)
     card = Card.query.get(card_id)
+
     if not card or card not in set_obj.cards:
         return jsonify({"error": f"Card with id {card_id} not found in set {set_id}"}), 404
 
