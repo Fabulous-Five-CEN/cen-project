@@ -78,10 +78,13 @@ def edit_set(set_id):
     data = request.get_json() or {}
     set_obj = SetTable.query.get_or_404(set_id)
 
-    if "name" in data:
-        set_obj.name = data["name"]
-    if "description" in data:
-        set_obj.description = data["description"]
+    name = data.get("name")
+    description = data.get("description")
+
+    if name is not None:
+        set_obj.name = name
+    if description is not None:
+        set_obj.description = description
     
     set_obj.updated_at = datetime.now(timezone.utc)
     try:
