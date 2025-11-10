@@ -18,7 +18,7 @@ def cards_home():
 
 @cards_bp.route("/new", methods=["POST"])
 def new_card():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     # Mandatory Fields
     english_text = data.get('english_text')
@@ -74,7 +74,7 @@ def new_card():
 @cards_bp.route("/edit/<int:card_id>", methods = ["PUT"])
 def edit_card(card_id):
 
-    data = request.get_json()
+    data = request.get_json() or {}
 
     card = Card.query.get(card_id)
     if not card:
@@ -134,7 +134,7 @@ def delete_card(card_id):
 
 @cards_bp.route("/auto-translate", methods=["POST"]) 
 def auto_translate():
-    data = request.get_json()
+    data = request.get_json() or {}
     text = data.get('text')
     direction = data.get('direction')
 

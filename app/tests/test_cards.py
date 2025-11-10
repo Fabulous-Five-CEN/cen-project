@@ -69,7 +69,7 @@ class CardIntegrationTests(unittest.TestCase):
        
         self.assertEqual(resp.status_code, 200)
         self.assertIn("translated_text", resp.json())
-        time.sleep(0.5)
+        time.sleep(1)
 
     # TC005: Spanish -> English Auto-translate
     def test_auto_translate_es_to_en(self):
