@@ -1,40 +1,43 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="d-flex flex-column align-items-center" style="min-height: calc(100vh - 50px); padding-top: 50px;">
+<div id="dashboard" class="d-flex flex-column align-items-center" style="min-height: calc(100vh - 50px); padding-top: 50px;">
 
-  <h1 class="text-center fw-bold mb-1" style="font-size: 4rem; color: #4255ff; font-family: 'Poppins', sans-serif;">
-    Lemmatica
-  </h1>
-  <p class="text-center fw-bold fs-3 mb-5" style="color: black; font-family: 'Poppins', sans-serif;">
-    LANGUAGE LEARNING MADE SIMPLE.
-  </p>
+    <h1 class="text-center fw-bold mb-1" style="font-size: 4rem; color: #4255ff; font-family: 'Poppins', sans-serif;">
+        Lemmatica
+    </h1>
+    <p class="text-center fw-bold fs-3 mb-5" style="color: black; font-family: 'Poppins', sans-serif;">
+        LANGUAGE LEARNING MADE SIMPLE.
+    </p>
 
-  <div class="d-flex flex-column flex-md-row gap-5 justify-content-center">
-    <a href="tab-cards"
-       class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
-       style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #0000b5; color: #4255ff;"
-       onmouseover="this.style.backgroundColor='#00008b'; this.style.color='#4255ff';"
-       onmouseout="this.style.backgroundColor='#0000b5'; this.style.color='#4255ff';">
-      ALL CARDS
-    </a>
+    <div class="d-flex flex-column flex-md-row gap-5 justify-content-center">
+        <a href="#tab-cards"
+           class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #0000b5; color: #4255ff;"
+           onmouseover="this.style.backgroundColor='#00008b'; this.style.color='#4255ff';"
+           onmouseout="this.style.backgroundColor='#0000b5'; this.style.color='#4255ff';"
+           onclick="openTab('tab-cards'); return false;">
+            ALL CARDS
+        </a>
 
-    <a href="tab-sets"
-       class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
-       style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #ebebeb; color: #0000b5;"
-       onmouseover="this.style.backgroundColor='#e0e0e0'; this.style.color='#0000b5';"
-       onmouseout="this.style.backgroundColor='#ebebeb'; this.style.color='#0000b5';">
-      MY SETS
-    </a>
+        <a href="#tab-sets"
+           class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #ebebeb; color: #0000b5;"
+           onmouseover="this.style.backgroundColor='#e0e0e0'; this.style.color='#0000b5';"
+           onmouseout="this.style.backgroundColor='#ebebeb'; this.style.color='#0000b5';"
+           onclick="openTab('tab-sets'); return false;">
+            MY SETS
+        </a>
 
-    <a href="tab-practice"
-       class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
-       style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #4255ff; color: #0000b5;"
-       onmouseover="this.style.backgroundColor='#2f3fcc'; this.style.color='#0000b5';"
-       onmouseout="this.style.backgroundColor='#4255ff'; this.style.color='#0000b5';">
-      PRACTICE
-    </a>
-  </div>
+        <a href="#tab-practice"
+           class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #4255ff; color: #0000b5;"
+           onmouseover="this.style.backgroundColor='#2f3fcc'; this.style.color='#0000b5';"
+           onmouseout="this.style.backgroundColor='#4255ff'; this.style.color='#0000b5';"
+           onclick="openTab('tab-practice'); return false;">
+            PRACTICE
+        </a>
+    </div>
 
 </div>
 {% endblock %}
