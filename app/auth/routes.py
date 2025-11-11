@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, render_template
 from . import auth_bp
 
 @auth_bp.route("/login")
@@ -8,3 +8,7 @@ def login():
 @auth_bp.route("/signup")
 def signup():
     return jsonify({"page": "Signup"})
+
+@auth_bp.route("/")
+def account_home():
+    return render_template("account.html")
