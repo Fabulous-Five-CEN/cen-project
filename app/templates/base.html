@@ -574,50 +574,6 @@ searchInput.addEventListener('input', () => {
     card.parentElement.style.display = text.includes(term) ? '' : 'none';
   });
 });
-
-/* ****************************************************
- * J) DASHBOARD BUTTON HANDLER
- * - Hides the initial dashboard content
- * - Finds the correct tab link and triggers its click action
- * **************************************************** */
-function openTab(tabId) {
-    // Hide dashboard
-    const dashboard = document.getElementById('dashboard');
-    if (dashboard) {
-        dashboard.style.display = 'none';
-    }
-    
-    const targetLink = document.querySelector(`a[href="#${tabId}"]`);
-    
-    if (targetLink) {
-        const tab = new bootstrap.Tab(targetLink);
-        tab.show();
-    }
-}
-
-/* ****************************************************
- * K) GLOBAL TAB ACTIVATION HANDLER/DASHBOARD HIDER
- * - Hides the dashboard content whenever any tab starts to show.
- * - This handles clicks on the top navbar links.
- * **************************************************** */
-
-// Listen for any tab being shown and hide dashboard
-document.addEventListener('show.bs.tab', (e) => {
-    const dashboard = document.getElementById('dashboard');
-    if (dashboard) {
-        dashboard.style.display = 'none';
-    }
-});
-
-// Also hide dashboard when any navbar tab link is clicked directly
-document.querySelectorAll('.navbar-nav [data-bs-toggle="tab"]').forEach(link => {
-    link.addEventListener('click', () => {
-        const dashboard = document.getElementById('dashboard');
-        if (dashboard) {
-            dashboard.style.display = 'none';
-        }
-    });
-});
     
   </script>
 </body>
