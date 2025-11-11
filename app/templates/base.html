@@ -63,25 +63,14 @@
     </div>
   </nav>
 
+  {% block content %}{% endblock %}
+
   <!-- =========================
        Main content with tab panes
        ========================= -->
   
   <main class="container py-4">
     <div class="tab-content">
-
-      <section class="tab-pane fade" id="tab-dashboard" role="tabpanel">
-        <div class="d-flex flex-column align-items-center" style="min-height: calc(100vh - 50px); padding-top: 50px;">
-          <h1 class="text-center fw-bold vividblue mb-1 poppins" style="font-size: 4rem;">Lemmatica</h1>
-          <p class="text-center black fw-bold fs-3 mb-5 poppins">LANGUAGE LEARNING MADE SIMPLE.</p>
-
-          <div class="d-flex flex-column flex-md-row gap-5 justify-content-center">
-            <a href="#tab-cards" class="btn bg-royalblue rounded-square p-5 text-center fw-bold vividblue mx-3" data-bs-toggle="tab">ALL CARDS</a>
-            <a href="#tab-sets" class="btn bg-lightgray rounded-square p-5 text-center fw-bold royalblue mx-3" data-bs-toggle="tab">MY SETS</a>
-            <a href="#tab-practice" class="btn bg-vividblue rounded-square p-5 text-center fw-bold royalblue mx-3" data-bs-toggle="tab">PRACTICE</a>
-          </div>
-        </div>
-      </section>
 
       <!-- ================
            TAB: All Cards
