@@ -1,6 +1,6 @@
-from flask import jsonify
+from flask import jsonify, render_template
 from . import practice_bp
 
 @practice_bp.route("/")
 def practice_home():
-    return jsonify({"page": "Practice"})
+    return render_template("practice.html")
