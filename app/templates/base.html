@@ -54,7 +54,7 @@
       <!-- Right side nav links -->
       <div id="topnav" class="collapse navbar-collapse">
         <ul class="navbar-nav ms-auto" role="tablist">
-          <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-cards" role="tab">All Cards</a></li>
+          <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-cards" role="tab">All Cards</a></li>
           <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-sets" role="tab">My Sets</a></li>
           <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-practice" role="tab">Practice</a></li>
           <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-account" role="tab">Account</a></li>
@@ -66,6 +66,8 @@
   <!-- =========================
        Main content with tab panes
        ========================= -->
+
+  {% block content %}{% endblock %}
   
   <main class="container py-4">
     <div class="tab-content">
@@ -76,7 +78,7 @@
            - “Add Card +” opens modal
            - Card grid (rendered by JS)
            ================ -->
-      <section class="tab-pane fade show active" id="tab-cards" role="tabpanel">
+      <section class="tab-pane fade" id="tab-cards" role="tabpanel">
         <div class="d-flex gap-2 align-items-center mb-3">
           <!-- Client-side search filter (see JS) -->
           <input id="searchCards" class="form-control" placeholder="Search cards…">
