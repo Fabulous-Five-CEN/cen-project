@@ -1,9 +1,9 @@
-from flask import jsonify
+from flask import jsonify, render_template
 from . import sets_bp
 
 @sets_bp.route("/")
 def sets_home():
-    return jsonify({"page": "Sets"})
+    return render_template("sets.html")
 
 @sets_bp.route("/new")
 def new_set():
