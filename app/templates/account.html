@@ -3,6 +3,25 @@
 {% block content %}
 <main id="account-page" class="container py-4">
     <div class="row justify-content-center">
+          <div class="col-sm-10 col-md-7 col-lg-5">
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title text-center mb-3">Sign in</h5>
+                <form id="loginForm" novalidate>
+                  <div class="mb-3">
+                    <label class="form-label" for="email">Email</label>
+                    <input class="form-control" id="email" type="email" required>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" for="password">Password</label>
+                    <input class="form-control" id="password" type="password" required>
+                  </div>
+                  <button class="btn btn-primary w-100" type="submit">Sign in</button>
+                </form>
+                <div class="text-center small mt-3 text-muted">Demo mode coming soon</div>
+              </div>
+            </div>
+          </div>
         </div>
 </main>
 {% endblock %}
