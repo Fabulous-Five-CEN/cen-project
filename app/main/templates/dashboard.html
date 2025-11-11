@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <div id="dashboard" class="d-flex flex-column align-items-center" style="min-height: calc(100vh - 50px); padding-top: 50px;">
 
     <h1 class="text-center fw-bold mb-1" style="font-size: 4rem; color: #4255ff; font-family: 'Poppins', sans-serif;">
@@ -12,29 +14,32 @@
 
     <div class="d-flex flex-column flex-md-row gap-5 justify-content-center">
         <a href="#tab-cards"
-           class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
-           style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #0000b5; color: #4255ff;"
+           class="btn mx-3 d-flex align-items-center justify-content-start pt-5 fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-family: 'Poppins', sans-serif; font-size: 2rem; background-color: #0000b5; color: #4255ff;"
            onmouseover="this.style.backgroundColor='#00008b'; this.style.color='#4255ff';"
            onmouseout="this.style.backgroundColor='#0000b5'; this.style.color='#4255ff';"
            onclick="openTab('tab-cards'); return false;">
+            <i class="fa-solid fa-clipboard-list fa-3x mb-3"></i>
             ALL CARDS
         </a>
 
         <a href="#tab-sets"
-           class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
-           style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #ebebeb; color: #0000b5;"
+           class="btn mx-3 d-flex align-items-center justify-content-start pt-5 fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-family: 'Poppins', sans-serif; font-size: 2rem; background-color: #ebebeb; color: #0000b5;"
            onmouseover="this.style.backgroundColor='#e0e0e0'; this.style.color='#0000b5';"
            onmouseout="this.style.backgroundColor='#ebebeb'; this.style.color='#0000b5';"
            onclick="openTab('tab-sets'); return false;">
+            <i class="fa-solid fa-box-open fa-3x mb-3"></i>
             MY SETS
         </a>
 
         <a href="#tab-practice"
-           class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
-           style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #4255ff; color: #0000b5;"
+           class="btn mx-3 d-flex align-items-center justify-content-start pt-5 fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-family: 'Poppins', sans-serif; font-size: 2rem; background-color: #4255ff; color: #0000b5;"
            onmouseover="this.style.backgroundColor='#2f3fcc'; this.style.color='#0000b5';"
            onmouseout="this.style.backgroundColor='#4255ff'; this.style.color='#0000b5';"
            onclick="openTab('tab-practice'); return false;">
+            <i class="fa-solid fa-trophy fa-3x mb-3"></i>
             PRACTICE
         </a>
     </div>
