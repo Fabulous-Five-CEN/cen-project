@@ -1,113 +1,37 @@
-.bg-vividblue {
-    background-color: #4255ff;
-}
-
-.bg-vividblue:hover {
-    background-color: #2f3fcc;
-    color: #0000b5;
-}
-
-.vividblue {
-    color: #4255ff;
-}
-
-.bg-lightgray {
-    background-color: #ebebeb;
-}
-
-.bg-lightgray:hover {
-    background-color: #e0e0e0;
-    color: #0000b5;
-}
-
-.lightgray {
-    color: #ebebeb;
-}
-
-.bg-royalblue {
-    background-color: #0000b5;
-}
-
-.bg-royalblue:hover {
-    background-color: #00008b;
-    color: #4255ff;
-}
-
-.royalblue {
-    color: #0000b5;
-}
-
-.black {
-    color: black;
-}
-
-.navbar:hover {
-    background-color: #4255ff;
-}
-
-.navbar .nav-link:hover {
-    color: #e0e0e0 !important;
-}
-
-.navbar.topbar {
-  height: 50px;
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-.navbar-brand {
-  font-size: 1.25rem;
-}
-
-.navbar-nav .nav-link {
-  padding: 0 0.5rem;
-  font-weight: 500;
-}
-
-.navbar .container-fluid {
-  flex-wrap: nowrap;
-}
-
-.rounded-square {
-  width: 300px;
-  height: 300px;
-  border-radius: 30%;
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  font-size: 1.8rem;
-}
-
-.poppins {
-    font-family: 'Poppins', sans-serif !important; 
-    font-weight: inherit;
-}
-
-.fw-bold {
-    font-weight: 700 !important;
-}
-
-.inter {
-    font-family: 'Inter', sans-serif !important;
-    font-weight: inherit;
-}
-
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="d-flex flex-column align-items-center " style="min-height: calc(100vh - 50px); padding-top: 50px;">
+<div class="d-flex flex-column align-items-center" style="min-height: calc(100vh - 50px); padding-top: 50px;">
 
-  <h1 class="text-center fw-bold vividblue mb-1 poppins" style="font-size: 4rem;">Lemmatica</h1>
-  <p class="text-center black fw-bold fs-3 mb-5 poppins">LANGUAGE LEARNING MADE SIMPLE.</p>
+  <h1 class="text-center fw-bold mb-1" style="font-size: 4rem; color: #4255ff; font-family: 'Poppins', sans-serif;">
+    Lemmatica
+  </h1>
+  <p class="text-center fw-bold fs-3 mb-5" style="color: black; font-family: 'Poppins', sans-serif;">
+    LANGUAGE LEARNING MADE SIMPLE.
+  </p>
 
   <div class="d-flex flex-column flex-md-row gap-5 justify-content-center">
-    <a href="tab-cards" class="btn bg-royalblue rounded-square p-5 text-center fw-bold vividblue mx-3">
+    <a href="tab-cards"
+       class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
+       style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #0000b5; color: #4255ff;"
+       onmouseover="this.style.backgroundColor='#00008b'; this.style.color='#4255ff';"
+       onmouseout="this.style.backgroundColor='#0000b5'; this.style.color='#4255ff';">
       ALL CARDS
     </a>
-    <a href="tab-sets" class="btn bg-lightgray rounded-square p-5 text-center fw-bold royalblue mx-3">
+
+    <a href="tab-sets"
+       class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
+       style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #ebebeb; color: #0000b5;"
+       onmouseover="this.style.backgroundColor='#e0e0e0'; this.style.color='#0000b5';"
+       onmouseout="this.style.backgroundColor='#ebebeb'; this.style.color='#0000b5';">
       MY SETS
     </a>
-    <a href="tab-practice" class="btn bg-vividblue rounded-square p-5 text-center fw-bold royalblue mx-3">
+
+    <a href="tab-practice"
+       class="btn mx-3 d-flex align-items-center justify-content-center fw-bold"
+       style="width: 300px; height: 300px; border-radius: 30%; font-size: 1.8rem; background-color: #4255ff; color: #0000b5;"
+       onmouseover="this.style.backgroundColor='#2f3fcc'; this.style.color='#0000b5';"
+       onmouseout="this.style.backgroundColor='#4255ff'; this.style.color='#0000b5';">
       PRACTICE
     </a>
   </div>
