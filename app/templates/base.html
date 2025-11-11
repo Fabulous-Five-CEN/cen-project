@@ -69,7 +69,7 @@
 
   {% block content %}{% endblock %}
   
-  <main class="container py-4">
+  <main id="tab-content-container" class="container py-4">
     <div class="tab-content">
 
       <!-- ================
@@ -574,6 +574,26 @@ searchInput.addEventListener('input', () => {
     card.parentElement.style.display = text.includes(term) ? '' : 'none';
   });
 });
+
+/* ****************************************************
+ * J) DASHBOARD BUTTON HANDLER
+ * - Hides the initial dashboard content
+ * - Finds the correct tab link and triggers its click action
+ * **************************************************** */
+function openTab(tabId) {
+    // Hide dashboard
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
+        dashboard.style.display = 'none';
+    }
+    
+    const targetLink = document.querySelector(`a[href="#${tabId}"]`);
+    
+    if (targetLink) {
+        const tab = new bootstrap.Tab(targetLink);
+        tab.show();
+    }
+}
   </script>
 </body>
 </html>
