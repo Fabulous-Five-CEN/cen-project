@@ -601,14 +601,24 @@ function openTab(tabId) {
  * - This handles clicks on the top navbar links.
  * **************************************************** */
 
-const dashboard = document.getElementById('dashboard');
-const tabContainer = document.querySelector('.tab-content');
-
-if (dashboard && tabContainer) {
-    tabContainer.addEventListener('show.bs.tab', () => {
+// Listen for any tab being shown and hide dashboard
+document.addEventListener('show.bs.tab', (e) => {
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
         dashboard.style.display = 'none';
+    }
+});
+
+// Also hide dashboard when any navbar tab link is clicked directly
+document.querySelectorAll('.navbar-nav [data-bs-toggle="tab"]').forEach(link => {
+    link.addEventListener('click', () => {
+        const dashboard = document.getElementById('dashboard');
+        if (dashboard) {
+            dashboard.style.display = 'none';
+        }
     });
-}
+});
+    
   </script>
 </body>
 </html>
