@@ -3,6 +3,25 @@
 {% block content %}
 <main id="practice-page" class="container py-4">
     <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">Choose set</label>
+            <select id="practiceSet" class="form-select">
+              <option value="all">Practice All</option>
+              <!-- Later: add <option value="setId">Set Name</option> for real sets -->
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label d-block">Start side</label>
+            <div class="btn-group" role="group" aria-label="Start side">
+              <input type="radio" class="btn-check" name="startSide" id="sideES" value="es" checked>
+              <label class="btn btn-outline-primary" for="sideES">Spanish → English</label>
+              <input type="radio" class="btn-check" name="startSide" id="sideEN" value="en">
+              <label class="btn btn-outline-primary" for="sideEN">English → Spanish</label>
+            </div>
+          </div>
+          <div class="col-md-3 text-md-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#practiceModal">Start Practice</button>
+          </div>
         </div>
 </main>
 {% endblock %}
