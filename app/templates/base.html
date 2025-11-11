@@ -600,17 +600,15 @@ function openTab(tabId) {
  * - Hides the dashboard content whenever any tab starts to show.
  * - This handles clicks on the top navbar links.
  * **************************************************** */
-document.addEventListener('DOMContentLoaded', () => {
-    const dashboard = document.getElementById('dashboard');
 
-    const tabContainer = document.querySelector('.tab-content');
+const dashboard = document.getElementById('dashboard');
+const tabContainer = document.querySelector('.tab-content');
 
-    if (dashboard && tabContainer) {
-        tabContainer.addEventListener('show.bs.tab', () => {
-            dashboard.style.display = 'none';
-        });
-    }
-});
+if (dashboard && tabContainer) {
+    tabContainer.addEventListener('show.bs.tab', () => {
+        dashboard.style.display = 'none';
+    });
+}
   </script>
 </body>
 </html>
