@@ -10,5 +10,64 @@
     </div>
 
     <div id="cardsGrid" class="row g-3"></div>
+
+      <!-- =========================
+       Floating “+” Add Card button
+       Opens the same #cardModal as the toolbar button
+       ========================= -->
+  <button class="btn btn-primary rounded-circle fab shadow" style="width:56px;height:56px"
+          data-bs-toggle="modal" data-bs-target="#cardModal" aria-label="Add card">+</button>
+
+  <!-- =====================================================
+       ADD / EDIT CARD MODAL
+       - Single modal used for both creating and editing a card
+       - We track “editIndex” in JS to know which mode we’re in
+       ===================================================== -->
+  <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="cardForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Add / Edit Card</h5>
+          <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <!-- Required: Spanish text -->
+            <div class="col-md-6">
+              <label class="form-label">Spanish</label>
+              <textarea class="form-control" id="esText" rows="3" required></textarea>
+            </div>
+            <!-- Required: English text -->
+            <div class="col-md-6">
+              <label class="form-label">English</label>
+              <textarea class="form-control" id="enText" rows="3" required></textarea>
+            </div>
+            <!-- Optional: notes -->
+            <div class="col-12">
+              <label class="form-label">Notes (optional)</label>
+              <textarea class="form-control" id="notes" rows="2"></textarea>
+            </div>
+            <!-- Optional: place card in one or more sets (none by default) -->
+            <div class="col-12">
+              <label class="form-label">Add to set (optional)</label>
+              <select id="cardSets" class="form-select" multiple size="4">
+                <option value="" disabled selected hidden>(no set)</option>
+                <!-- Add <option value="setId">Set Name</option> when you implement sets -->
+              </select>
+              <div class="form-text">Select one or more sets.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <!-- Closes modal without saving -->
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <!-- Triggers JS submit handler below -->
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </main>
 {% endblock %}

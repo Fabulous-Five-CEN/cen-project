@@ -11,5 +11,29 @@
 
     <div class="accordion" id="setsAccordion">
         </div>
+    
+      <!-- ===========================================
+       EDIT SET MODAL (skeleton UI, not wired yet)
+       =========================================== -->
+    <div class="modal fade" id="setEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+        <form class="modal-content" id="setForm" novalidate>
+            <div class="modal-header">
+            <h5 class="modal-title">Edit Set</h5>
+            <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            <label class="form-label" for="setName">Name</label>
+            <input id="setName" class="form-control" required>
+            <label class="form-label mt-3" for="setDesc">Description</label>
+            <textarea id="setDesc" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" type="submit">Save</button>
+            </div>
+        </form>
+        </div>
+    </div>
 </main>
 {% endblock %}

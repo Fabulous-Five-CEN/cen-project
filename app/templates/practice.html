@@ -23,5 +23,49 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#practiceModal">Start Practice</button>
           </div>
         </div>
+    
+      <!-- ======================================================
+       FULLSCREEN PRACTICE MODAL
+       - Shows one card front/back with flip/next/prev
+       - Uses a fixed sample deck below (not your saved cards)
+       ====================================================== -->
+  <div class="modal fade" id="practiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header justify-content-between">
+          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Exit</button>
+          <!-- Progress indicator (updated in JS) -->
+          <span class="badge text-bg-primary" id="progressPill">0 / 10</span>
+          <div class="btn-group">
+            <button class="btn btn-outline-secondary btn-sm" id="shuffleBtn">Shuffle</button>
+            <button class="btn btn-outline-danger btn-sm" id="resetBtn">Reset</button>
+          </div>
+        </div>
+
+        <div class="modal-body d-flex flex-column justify-content-center align-items-center">
+          <div class="position-relative border rounded p-4" style="min-width: min(90%,700px); min-height: 260px;">
+            <!-- This wrapper gets class "flipped" toggled to animate -->
+            <div id="practiceCard" class="card-face">
+              <div class="front">
+                <div class="text-muted small mb-1" id="frontLabel">Spanish</div>
+                <h3 id="frontText" class="text-center">¿Cómo estás?</h3>
+              </div>
+              <div class="back">
+                <div class="text-muted small mb-1" id="backLabel">English</div>
+                <h3 id="backText" class="text-center">How are you?</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer justify-content-center">
+          <!-- Button handlers are attached in JS below -->
+          <button class="btn btn-outline-secondary" id="prevBtn">Previous</button>
+          <button class="btn btn-secondary" id="flipBtn">Flip</button>
+          <button class="btn btn-outline-secondary" id="nextBtn">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>
 {% endblock %}
