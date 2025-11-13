@@ -42,8 +42,284 @@
 
   {% block content %}{% endblock %}
 
+  <!-- Toast used for “Saved.” feedback after saving a card -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+    <div id="appToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Saved.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap JS bundle (required for modals, tabs, toast, etc.) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+  <!-- =====================================
+       APP SCRIPT (localStorage + UI wiring)
+       ===================================== -->
+  <script>
+/* ****************************************************
+ * A) STATE + DOM REFS
+ * **************************************************** */
+
+// Container where card tiles will be rendered
+const cardsGrid = document.getElementById('cardsGrid');
+
+// Load saved cards from localStorage (persistent per browser)
+// If nothing stored yet, use an empty array
+let cards = JSON.parse(localStorage.getItem('cards')) || [];
+
+// When not null, we are editing the card at this index
+let editIndex = null;
+
+// Refs for optional notes + the sets <select multiple>
+const notesEl = document.getElementById('notes');
+const setsEl  = document.getElementById('cardSets');
+
+/* ****************************************************
+ * B) SETS HELPERS (placeholder only)
+ * - getSelectedSets(): read selected set IDs (ignore placeholder)
+ * - setSelectedSets(values): preselect given set IDs on edit
+ * **************************************************** */
+function getSelectedSets() {
+  // Ignore any option with empty value ("") — that's the hidden placeholder
+  return Array.from(setsEl.options)
+    .filter(o => o.selected && o.value)
+    .map(o => o.value);
+}
+function setSelectedSets(values = []) {
+  Array.from(setsEl.options).forEach(o => { o.selected = values.includes(o.value); });
+}
+
+/* ****************************************************
+ * C) ADD/EDIT MODAL LIFECYCLE
+ * - Clicking any opener sets editIndex = null (add mode)
+ * - On show: if adding, fully reset the form and selections
+ * - On hide: clear any sticky selection (Safari quirk)
+ * **************************************************** */
+
+// Any element opening #cardModal puts us in “add” mode
+document.querySelectorAll('[data-bs-target="#cardModal"]').forEach(btn => {
+  btn.addEventListener('click', () => { editIndex = null; });
+});
+
+const cardModalEl = document.getElementById('cardModal');
+
+// Before showing the modal, if we are adding, clear everything
+cardModalEl.addEventListener('show.bs.modal', () => {
+  if (editIndex === null) {
+    const form = document.getElementById('cardForm');
+    form.reset();
+    notesEl.value = '';
+    Array.from(setsEl.options).forEach(o => { o.selected = false; });
+    setsEl.selectedIndex = -1; // extra insurance (Safari)
+  }
+});
+
+// After hiding the modal, clear any multiselect highlight
+cardModalEl.addEventListener('hidden.bs.modal', () => {
+  Array.from(setsEl.options).forEach(o => { o.selected = false; });
+  setsEl.selectedIndex = -1;
+});
+
+/* ****************************************************
+ * D) RENDER CARDS GRID
+ * - Creates a Bootstrap card for each saved card
+ * - Shows Spanish, English, optional notes, and set badges
+ * - Adds Edit/Delete buttons with data-action attributes
+ * **************************************************** */
+function renderCards() {
+  cardsGrid.innerHTML = ''; // clear
+
+  cards.forEach((card, index) => {
+    const col = document.createElement('div');
+    col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+    col.innerHTML = `
+      <div class="card h-100" data-index="${index}">
+        <div class="card-body">
+          <div class="small text-muted">Spanish</div>
+          <h5 class="card-title mb-1">${card.es}</h5>
+
+          <div class="small text-muted">English</div>
+          <p class="card-text mb-2">${card.en}</p>
+
+          ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
+
+          ${
+            card.sets?.length
+              ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
+                card.sets.map(s => `<span class="badge text-bg-light">${s}</span>`).join('') +
+                `</div>`
+              : ``
+          }
+
+          <div class="d-flex justify-content-between">
+            <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
+          </div>
+        </div>
+      </div>`;
+    cardsGrid.appendChild(col);
+  });
+}
+
+/* ****************************************************
+ * E) ADD/EDIT SUBMIT HANDLER
+ * - Reads form fields
+ * - If editing: updates existing card
+ * - Else: unshift() inserts new card at top
+ * - Persists to localStorage and re-renders
+ * - Closes modal and shows a toast
+ * **************************************************** */
+document.getElementById('cardForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  const es   = document.getElementById('esText').value.trim();
+  const en   = document.getElementById('enText').value.trim();
+  const notes= notesEl.value.trim();
+  const sets = getSelectedSets();
+
+  // Require both sides filled
+  if (!es || !en) return;
+
+  if (editIndex !== null) {
+    // Update existing card
+    cards[editIndex] = { ...cards[editIndex], es, en, notes, sets };
+    editIndex = null; // leave edit mode
+  } else {
+    // Add new card at the top
+    cards.unshift({ es, en, notes, sets });
+  }
+
+  // Persist entire array as JSON
+  localStorage.setItem('cards', JSON.stringify(cards));
+
+  // Update UI
+  renderCards();
+
+  // Close the modal (works whether first-open or existing instance)
+  const m = document.getElementById('cardModal');
+  (bootstrap.Modal.getInstance(m) || new bootstrap.Modal(m)).hide();
+
+  // Show "Saved." toast
+  new bootstrap.Toast(document.getElementById('appToast')).show();
+
+  // Reset form for next add
+  e.target.reset();
+  setSelectedSets([]);
+});
+
+/* ****************************************************
+ * F) ROW ACTIONS: DELETE / EDIT
+ * - Delegated click listener on the grid
+ * - Delete: remove from array, persist, re-render
+ * - Edit: preload fields, set editIndex, show modal
+ * **************************************************** */
+cardsGrid.addEventListener('click', (e) => {
+  // DELETE
+  if (e.target.dataset.action === 'deleteCard') {
+    const idx = e.target.closest('[data-index]').dataset.index;
+    cards.splice(idx, 1);
+    localStorage.setItem('cards', JSON.stringify(cards));
+    renderCards();
+  }
+
+  // EDIT
+  if (e.target.dataset.action === 'editCard') {
+    const idx = Number(e.target.closest('[data-index]').dataset.index);
+    editIndex = idx;
+
+    // Preload modal fields
+    document.getElementById('esText').value = cards[idx].es || '';
+    document.getElementById('enText').value = cards[idx].en || '';
+    notesEl.value = cards[idx].notes || '';
+    setSelectedSets(cards[idx].sets || []);
+
+    // Open modal
+    const modal = new bootstrap.Modal(document.getElementById('cardModal'));
+    modal.show();
+  }
+});
+
+/* ****************************************************
+ * G) INITIAL RENDER: draw everything we have at load
+ * **************************************************** */
+renderCards();
+
+/* ****************************************************
+ * H) PRACTICE DEMO (fixed sample deck, independent of saved cards)
+ * - Simple index/flip/progress logic
+ * - Keyboard shortcuts enabled only while modal is open
+ * **************************************************** */
+const deck = [
+  {es:'¿Cómo estás?', en:'How are you?'},
+  {es:'Gracias',       en:'Thank you'},
+  {es:'La película',   en:'The movie'},
+  {es:'¿Dónde está…?', en:'Where is…?'}
+];
+let idx = 0;        // current card index
+let seen = 0;       // how many fronts we’ve advanced beyond
+let flipped = false;// current flip state
+
+function renderCard(){
+  const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
+
+  const frontLabel = sideES ? 'Spanish' : 'English';
+  const backLabel  = sideES ? 'English' : 'Spanish';
+  const frontText  = sideES ? deck[idx].es : deck[idx].en;
+  const backText   = sideES ? deck[idx].en : deck[idx].es;
+
+  document.getElementById('frontLabel').textContent = frontLabel;
+  document.getElementById('backLabel').textContent  = backLabel;
+  document.getElementById('frontText').textContent  = frontText;
+  document.getElementById('backText').textContent   = backText;
+
+  document.getElementById('practiceCard').classList.toggle('flipped', flipped);
+  document.getElementById('progressPill').textContent = (seen) + ' / ' + deck.length;
+}
+renderCard();
+
+document.getElementById('flipBtn').onclick = ()=>{ flipped = !flipped; renderCard(); };
+document.getElementById('nextBtn').onclick = ()=>{
+  if(!flipped){ seen = Math.min(deck.length, seen+1); } // count only if we saw the front
+  flipped=false; idx=(idx+1)%deck.length; renderCard();
+};
+document.getElementById('prevBtn').onclick = ()=>{ flipped=false; idx=(idx-1+deck.length)%deck.length; renderCard(); };
+document.getElementById('resetBtn').onclick= ()=>{ idx=0; seen=0; flipped=false; renderCard(); };
+document.getElementById('shuffleBtn').onclick= ()=>{
+  // Fisher–Yates shuffle
+  for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+  renderCard();
+};
+
+// Enable arrow keys / spacebar only while practice modal is open
+document.getElementById('practiceModal').addEventListener('shown.bs.modal', ()=>{
+  const keyHandler = (e)=>{
+    if(e.key==='ArrowRight') document.getElementById('nextBtn').click();
+    if(e.key==='ArrowLeft')  document.getElementById('prevBtn').click();
+    if(e.key===' ')          document.getElementById('flipBtn').click();
+  };
+  window.addEventListener('keydown', keyHandler);
+  document.getElementById('practiceModal').addEventListener('hidden.bs.modal',
+    ()=>window.removeEventListener('keydown', keyHandler),
+    {once:true}
+  );
+});
+
+/* ****************************************************
+ * I) SEARCH FILTER
+ * - Simple client-side “contains” filter against each card tile’s text
+ * **************************************************** */
+const searchInput = document.getElementById('searchCards');
+searchInput.addEventListener('input', () => {
+  const term = searchInput.value.toLowerCase();
+  document.querySelectorAll('#cardsGrid .card').forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.parentElement.style.display = text.includes(term) ? '' : 'none';
+  });
+});
+    
+  </script>
 </body>
 </html>
