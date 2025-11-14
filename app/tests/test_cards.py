@@ -12,6 +12,19 @@ USER_ID = int(os.environ.get("TEST_USER_ID", "2"))  # Valid user_id in db
 
 
 class CardIntegrationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        """Give the Dockerized backend a moment to boot before tests fire requests."""
+        wait_seconds = int(os.environ.get("CARDS_TEST_STARTUP_DELAY", "5"))
+        for _ in range(10):
+            try:
+                resp = requests.get(f"{BASE_URL}/")
+                if resp.status_code < 500:
+                    return
+            except requests.exceptions.RequestException:
+                time.sleep(wait_seconds)
+        raise RuntimeError("Cards API did not become reachable in time")
+
     def setUp(self):
         """Set up a list to track created cards for cleanup."""
         self.created_ids = []
