@@ -17,6 +17,15 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Recreate docker-compose.yml from DOCKERCOMPOSEFILE
+          command: |
+            if [ -z "${DOCKERCOMPOSEFILE:-}" ]; then
+              echo "DOCKERCOMPOSEFILE environment variable is not set." >&2
+              exit 1
+            fi
+            printf '%s' "$DOCKERCOMPOSEFILE" | base64 --decode > docker-compose.yml
+            ls -l docker-compose.yml
+      - run:
           name: Install system dependencies
           command: |
             sudo apt-get update
