@@ -26,6 +26,12 @@ jobs:
             printf '%s' "$DOCKERCOMPOSEFILE" | base64 --decode > docker-compose.yml
             ls -l docker-compose.yml
       - run:
+          name: Ensure cen-project directory exists for Docker context
+          command: |
+            if [ ! -d cen-project ]; then
+              ln -snf . cen-project
+            fi
+      - run:
           name: Install system dependencies
           command: |
             sudo apt-get update
