@@ -48,8 +48,8 @@ jobs:
       - run:
           name: Seed database fixtures
           command: |
-            docker compose exec -T web python app/scripts/test_seed_users.py
-            docker compose exec -T web python app/scripts/seed_cards.py
+            docker compose exec -T web python -m app.scripts.test_seed_users
+            docker compose exec -T web python -m app.scripts.seed_cards
       - run:
           name: Wait for application to become healthy
           command: |
