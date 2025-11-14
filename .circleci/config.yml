@@ -3,7 +3,8 @@ version: 2.1
 jobs:
   docker-and-tests:
     machine:
-      image: ubuntu-2204:2024.04
+      image: ubuntu-2204:current
+    resource_class: medium
     environment:
       APP_PORT: 8001
       DB_PORT: 3306
