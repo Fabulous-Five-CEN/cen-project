@@ -1,53 +1,65 @@
 version: 2.1
 
 jobs:
-  test:
-    docker:
-      - image: cimg/python:3.11
-      - image: mariadb:11.4
-        environment:
-          MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: cen_test
-          MARIADB_USER: testuser
-          MARIADB_PASSWORD: testpass
-
+  docker-and-tests:
+    machine:
+      image: ubuntu-2204:2024.04
+    environment:
+      APP_PORT: 8001
+      DB_PORT: 3306
+      DB_NAME: cen_ci
+      DB_USER: cen_ci_user
+      DB_PASSWORD: cen_ci_password
+      MARIADB_ROOT_PASSWORD: cen_root_password
+      BACKEND_HOST: http://localhost
+      TEST_USER_ID: "2"
     steps:
       - checkout
-
       - run:
-          name: Load environment variables
+          name: Install system dependencies
           command: |
-            # Export all variables from the parent .env file
-            set -a
-            source ../.env
-            set +a
-            echo "Loaded .env variables"
-
+            sudo apt-get update
+            sudo apt-get install -y python3 python3-venv python3-pip docker-compose-plugin curl
       - run:
-          name: Set up Python environment
+          name: Set up virtual environment
           command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install --upgrade pip
-            pip install -r cen-project/requirements.txt
-
+            python3 -m venv venv
+            ./venv/bin/pip install --upgrade pip
+            ./venv/bin/pip install -r requirements.txt
       - run:
-          name: Wait for MariaDB to start
+          name: Build and start Docker services
+          command: docker compose up -d --build
+      - run:
+          name: Seed database fixtures
           command: |
-            for i in `seq 1 20`; do
-              nc -z 127.0.0.1 3306 && echo "DB is up!" && break
-              echo "Waiting for DB..."
-              sleep 2
+            docker compose exec -T web python app/scripts/test_seed_users.py
+            docker compose exec -T web python app/scripts/seed_cards.py
+      - run:
+          name: Wait for application to become healthy
+          command: |
+            for i in {1..40}; do
+              if curl -sSf "http://localhost:${APP_PORT}/cards/" > /dev/null; then
+                echo "Application is responding"
+                exit 0
+              fi
+              sleep 5
             done
-
+            docker compose logs
+            echo "Application failed to start" >&2
+            exit 1
       - run:
-          name: Run Flask integration tests
+          name: Run application tests (app/tests)
           command: |
-            . venv/bin/activate
-            cd cen-project
-            python -m unittest discover -v
+            ./venv/bin/python -m unittest discover -s app/tests -v
+      - run:
+          name: Run repository root tests folder
+          command: ./venv/bin/python -m unittest discover -s tests -v
+      - run:
+          name: Tear down Docker services
+          command: docker compose down -v
+          when: always
 
 workflows:
-  test-workflow:
+  build-and-test:
     jobs:
-      - test
+      - docker-and-tests
