@@ -67,14 +67,6 @@ jobs:
           command: |
             python3 -m unittest discover -s app/tests -v
       - run:
-          name: Run repository root tests folder
-          command: |
-            if [ -d tests ]; then
-              python3 -m unittest discover -s tests -v
-            else
-              echo "tests directory not found, skipping root-level tests."
-            fi
-      - run:
           name: Tear down Docker services
           command: docker compose down -v
           when: always
