@@ -1,126 +1,130 @@
-import os
-import time
 import unittest
+from unittest.mock import MagicMock, patch
 
-import requests
+from sqlalchemy.pool import StaticPool
 
-
-APP_PORT = os.environ.get("APP_PORT", "8025")
-BACKEND_HOST = os.environ.get("BACKEND_HOST", "http://localhost")
-BASE_URL = os.environ.get("CARDS_BASE_URL", f"{BACKEND_HOST}:{APP_PORT}")
-USER_ID = int(os.environ.get("TEST_USER_ID", "2"))  # Valid user_id in db
+from app import create_app, db
+from app.models import Card, User
 
 
 class CardIntegrationTests(unittest.TestCase):
+    """Exercise the cards blueprint using the Flask test client instead of HTTP calls."""
+
     def setUp(self):
-        """Set up a list to track created cards for cleanup."""
-        self.created_ids = []
+        config_override = {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+            "SQLALCHEMY_ENGINE_OPTIONS": {
+                "poolclass": StaticPool,
+                "connect_args": {"check_same_thread": False},
+            },
+        }
+        self.app = create_app(config_override)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+        self.client = self.app.test_client()
+
+        self.user = User(
+            email="tester@example.com",
+            password_hash="hashed-password",
+            display_name="Tester",
+        )
+        db.session.add(self.user)
+        db.session.commit()
 
     def tearDown(self):
-        """Clean up cards after each test."""
-        for card_id in self.created_ids:
-            requests.delete(f"{BASE_URL}/cards/delete/{card_id}")
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
-    # TC001: Create card successfully
+    def _create_card(self, english_text="dog", spanish_text="el perro", notes=""):
+        card = Card(
+            english_text=english_text,
+            spanish_text=spanish_text,
+            notes=notes,
+            user_id=self.user.id,
+        )
+        db.session.add(card)
+        db.session.commit()
+        return card
+
+    def _mock_translation(self, mock_post, translated_text):
+        fake_response = MagicMock()
+        fake_response.json.return_value = {
+            "translations": [{"translated": [translated_text]}],
+            "translated_characters": len(translated_text),
+        }
+        fake_response.raise_for_status = MagicMock()
+        mock_post.return_value = fake_response
+
     def test_create_card_success(self):
         payload = {
             "english_text": "apple",
             "spanish_text": "la manzana",
             "notes": "basic food",
             "is_starred": False,
-            "user_id": USER_ID
+            "user_id": self.user.id,
         }
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
+        resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 201)
-        card_id = resp.json()["card"]["id"]
-        self.created_ids.append(card_id)
-        self.assertEqual(resp.json()["card"]["english_text"], "apple")
+        self.assertEqual(resp.get_json()["card"]["english_text"], "apple")
 
-    # TC002A: Missing English
     def test_create_card_missing_english(self):
-        payload = {"spanish_text": "perro", "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
+        payload = {"spanish_text": "perro", "user_id": self.user.id}
+        resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
-    # TC002B: Missing Spanish
     def test_create_card_missing_spanish(self):
-        payload = {"english_text": "dog", "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
+        payload = {"english_text": "dog", "user_id": self.user.id}
+        resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
-    # TC002C: Missing User
     def test_create_card_missing_user(self):
         payload = {"english_text": "tree", "spanish_text": "árbol"}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
+        resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
-    # TC003: Invalid User ID
     def test_create_card_invalid_user(self):
-        payload = {"english_text": "cat", "spanish_text": "el gato", "user_id": 9999}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
+        payload = {
+            "english_text": "cat",
+            "spanish_text": "el gato",
+            "user_id": self.user.id + 999,
+        }
+        resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 404)
 
-    # TC004: English -> Spanish Auto-translate
-    def test_auto_translate_en_to_es(self):
-        resp = requests.post(f"{BASE_URL}/cards/auto-translate", json={
-            "text": "dog",
-            "direction": "english_to_spanish"
-        })
-       
+    @patch("app.cards.routes.requests.post")
+    def test_auto_translate_en_to_es(self, mock_post):
+        self._mock_translation(mock_post, "el perro")
+        resp = self.client.post(
+            "/cards/auto-translate",
+            json={"text": "dog", "direction": "english_to_spanish"},
+        )
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("translated_text", resp.json())
-        time.sleep(0.5)
+        self.assertEqual(resp.get_json()["translated_text"], "el perro")
 
-    # TC005: Spanish -> English Auto-translate
-    def test_auto_translate_es_to_en(self):
-        resp = requests.post(f"{BASE_URL}/cards/auto-translate", json={
-            "text": "tengo",
-            "direction": "spanish_to_english"
-        })
-        print("Status code:", resp.status_code)
-        try:
-            print("Response JSON:", resp.json())
-        except Exception as e:
-            print("Failed to parse JSON:", e)
-            print("Raw response text:", resp.text)
-        print("method reached")
+    @patch("app.cards.routes.requests.post")
+    def test_auto_translate_es_to_en(self, mock_post):
+        self._mock_translation(mock_post, "I have")
+        resp = self.client.post(
+            "/cards/auto-translate",
+            json={"text": "tengo", "direction": "spanish_to_english"},
+        )
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("translated_text", resp.json())
+        self.assertEqual(resp.get_json()["translated_text"], "I have")
 
-
-
-        # TC006: Edit a card
     def test_edit_card(self):
-        # create card
-        payload = {"english_text": "dog", "spanish_text": "el perro", "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
-
-        # debug: print full response from creation
-        print("Create card response status:", resp.status_code)
-        print("Create card response JSON:", resp.text)
-
-        card_id = resp.json()["card"]["id"]
-        self.created_ids.append(card_id)
-
-        # edit card
+        card = self._create_card()
         update_payload = {"english_text": "puppy"}
-        edit_resp = requests.put(f"{BASE_URL}/cards/edit/{card_id}", json=update_payload)
-
-        # debug: print full response from edit
-        print("Edit card response status:", edit_resp.status_code)
-        print("Edit card response JSON:", edit_resp.text)
-
+        edit_resp = self.client.put(f"/cards/edit/{card.id}", json=update_payload)
         self.assertEqual(edit_resp.status_code, 200)
-        self.assertEqual(edit_resp.json()["card"]["english_text"], "puppy")
+        self.assertEqual(edit_resp.get_json()["card"]["english_text"], "puppy")
 
-
-    # TC007: Delete a card
     def test_delete_card(self):
-        payload = {"english_text": "temp", "spanish_text": "temporal", "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
-        card_id = resp.json()["card"]["id"]
-
-        del_resp = requests.delete(f"{BASE_URL}/cards/delete/{card_id}")
+        card = self._create_card(english_text="temp", spanish_text="temporal")
+        del_resp = self.client.delete(f"/cards/delete/{card.id}")
         self.assertEqual(del_resp.status_code, 200)
 
 
