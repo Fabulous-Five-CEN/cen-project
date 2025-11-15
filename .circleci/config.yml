@@ -1,7 +1,7 @@
 version: 2.1
 
 jobs:
-  docker-and-tests:
+  docker-stack:
     machine:
       image: ubuntu-2204:current
     resource_class: medium
@@ -37,11 +37,6 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y python3 python3-venv python3-pip docker-compose-plugin curl
       - run:
-          name: Install Python dependencies
-          command: |
-            python3 -m pip install --upgrade pip
-            python3 -m pip install -r requirements.txt
-      - run:
           name: Build and start Docker services
           command: docker compose up -d --build
       - run:
@@ -63,15 +58,48 @@ jobs:
             echo "Application failed to start" >&2
             exit 1
       - run:
-          name: Run application tests (app/tests)
-          command: |
-            python3 -m unittest discover -s app/tests -v
-      - run:
           name: Tear down Docker services
           command: docker compose down -v
           when: always
 
+  flask-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: medium
+    steps:
+      - checkout
+      - run: &install_python_deps
+          name: Install Python dependencies
+          command: |
+            python3 -m pip install --upgrade pip
+            python3 -m pip install -r requirements.txt
+      - run:
+          name: Run Flask app tests
+          command: python3 -m unittest discover -s app/tests -v
+
+  unit-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: medium
+    steps:
+      - checkout
+      - run: *install_python_deps
+      - run:
+          name: Run repository root tests folder
+          command: |
+            if [ -d tests ]; then
+              python3 -m unittest discover -s tests -v
+            else
+              echo "tests directory not found, skipping root-level tests."
+            fi
+
 workflows:
   build-and-test:
     jobs:
-      - docker-and-tests
+      - docker-stack
+      - flask-tests:
+          requires:
+            - docker-stack
+      - unit-tests:
+          requires:
+            - docker-stack
