@@ -9,6 +9,6 @@ def login():
 def signup():
     return jsonify({"page": "Signup"})
 
-@auth_bp.route("/")
+@auth_bp.route("/account")
 def account_home():
     return render_template("account.html")
