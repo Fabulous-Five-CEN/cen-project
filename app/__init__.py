@@ -9,16 +9,23 @@ from .cards import cards_bp
 from .sets import sets_bp
 from .practice import practice_bp
 
-def create_app():
+
+def create_app(config_override=None):
+    """
+    Application factory that optionally accepts a dictionary of config overrides.
+    Tests can inject in-memory databases without affecting the default config.
+    """
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object("config.Config")
+    if config_override:
+        app.config.update(config_override)
 
     # Initialize extensions
     db.init_app(app)
 
     # Auto update changes
-    app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.config["DEBUG"] = True
+    app.config.setdefault("TEMPLATES_AUTO_RELOAD", True)
+    app.config.setdefault("DEBUG", True)
 
     # Register blueprints
     app.register_blueprint(main_bp)

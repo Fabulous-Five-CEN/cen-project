@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+import os
 import unittest
 
 from app import create_app
@@ -18,7 +21,7 @@ class CardsRoutesTestCase(unittest.TestCase):
 
     def test_auto_translate_rejects_bad_direction(self):
         response = self.client.post(
-            "/cards/cards/auto-translate",
+            "/cards/auto-translate",
             json={"text": "", "direction": "invalid"},
         )
         self.assertEqual(response.status_code, 400)

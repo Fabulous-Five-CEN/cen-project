@@ -18,7 +18,7 @@ def cards_home():
 
 @cards_bp.route("/new", methods=["POST"])
 def new_card():
-    data = request.get_json()
+    data = request.get_json() or {}
 
     # Mandatory Fields
     english_text = data.get('english_text')
@@ -38,7 +38,7 @@ def new_card():
 
     # Check that user is in database
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
     
@@ -74,9 +74,9 @@ def new_card():
 @cards_bp.route("/edit/<int:card_id>", methods = ["PUT"])
 def edit_card(card_id):
 
-    data = request.get_json()
+    data = request.get_json() or {}
 
-    card = Card.query.get(card_id)
+    card = db.session.get(Card, card_id)
     if not card:
             return jsonify({"Error" : f"No card exists in database with id {card_id}"}), 404
     
@@ -118,7 +118,7 @@ def edit_card(card_id):
 
 @cards_bp.route("/delete/<int:card_id>", methods = ["DELETE"])
 def delete_card(card_id):
-    card = Card.query.get(card_id)
+    card = db.session.get(Card, card_id)
     if not card:
         return jsonify({"error": f"No card found with id {card_id}"}), 404
 
@@ -134,7 +134,7 @@ def delete_card(card_id):
 
 @cards_bp.route("/auto-translate", methods=["POST"]) 
 def auto_translate():
-    data = request.get_json()
+    data = request.get_json() or {}
     text = data.get('text')
     direction = data.get('direction')
 
