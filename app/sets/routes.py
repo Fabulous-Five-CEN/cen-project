@@ -1,9 +1,12 @@
-from flask import jsonify, request, abort
+from flask import jsonify, request, abort, render_template
 from . import sets_bp
 from app.extensions import db
 from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
 
+@sets_bp.route("/")
+def sets_home():
+    return render_template("sets.html")
 def serialize_set(set_obj):
     """Converts a SetTable object into a JSON-friendly dictionary."""
     return {

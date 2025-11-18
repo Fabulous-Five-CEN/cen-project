@@ -1,6 +1,45 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1>{{ page_title }}</h1>
-<p>Welcome to Lemmatica.</p>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<div id="dashboard" class="d-flex flex-column align-items-center" style="min-height: calc(100vh - 50px); padding-top: 50px;">
+
+    <h1 class="text-center fw-bold mb-1" style="font-size: 4rem; color: #4255ff; font-family: 'Poppins', sans-serif;">
+        Lemmatica
+    </h1>
+    <p class="text-center fw-bold fs-3 mb-5" style="color: black; font-family: 'Poppins', sans-serif;">
+        LANGUAGE LEARNING MADE SIMPLE.
+    </p>
+
+    <div class="d-flex flex-column flex-md-row gap-5 justify-content-center">
+        <a href="{{ url_for('cards.cards_home') }}"
+           class="btn mx-3 d-flex flex-column align-items-center justify-content-start pt-5 fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-family: 'Poppins', sans-serif; font-size: 2rem; background-color: #0000b5; color: #4255ff;"
+           onmouseover="this.style.backgroundColor='#00008b'; this.style.color='#4255ff';"
+           onmouseout="this.style.backgroundColor='#0000b5'; this.style.color='#4255ff';">
+            ALL CARDS
+            <i class="fa-solid fa-clipboard-list fa-3x mt-4"></i>
+        </a>
+
+        <a href="{{ url_for('sets.sets_home') }}"
+           class="btn mx-3 d-flex flex-column align-items-center justify-content-start pt-5 fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-family: 'Poppins', sans-serif; font-size: 2rem; background-color: #ebebeb; color: #0000b5;"
+           onmouseover="this.style.backgroundColor='#e0e0e0'; this.style.color='#0000b5';"
+           onmouseout="this.style.backgroundColor='#ebebeb'; this.style.color='#0000b5';">
+            MY SETS
+            <i class="fa-solid fa-box-open fa-3x mt-4"></i>
+        </a>
+
+        <a href="{{ url_for('practice.practice_home') }}"
+           class="btn mx-3 d-flex flex-column align-items-center justify-content-start pt-5 fw-bold"
+           style="width: 300px; height: 300px; border-radius: 30%; font-family: 'Poppins', sans-serif; font-size: 2rem; background-color: #4255ff; color: #0000b5;"
+           onmouseover="this.style.backgroundColor='#2f3fcc'; this.style.color='#0000b5';"
+           onmouseout="this.style.backgroundColor='#4255ff'; this.style.color='#0000b5';">
+            PRACTICE
+            <i class="fa-solid fa-trophy fa-3x mt-4"></i>
+        </a>
+    </div>
+
+</div>
 {% endblock %}

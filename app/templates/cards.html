@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<main id="cards-page" class="container py-4">
+    <div class="d-flex gap-2 align-items-center mb-3">
+        <input id="searchCards" class="form-control" placeholder="Search cards…">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
+            Add Card +
+        </button>
+    </div>
+
+    <div id="cardsGrid" class="row g-3"></div>
+
+      <!-- =========================
+       Floating “+” Add Card button
+       Opens the same #cardModal as the toolbar button
+       ========================= -->
+  <button class="btn btn-primary rounded-circle fab shadow" style="width:56px;height:56px"
+          data-bs-toggle="modal" data-bs-target="#cardModal" aria-label="Add card">+</button>
+
+  <!-- =====================================================
+       ADD / EDIT CARD MODAL
+       - Single modal used for both creating and editing a card
+       - We track “editIndex” in JS to know which mode we’re in
+       ===================================================== -->
+  <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="cardForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Add / Edit Card</h5>
+          <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <!-- Required: Spanish text -->
+            <div class="col-md-6">
+              <label class="form-label">Spanish</label>
+              <textarea class="form-control" id="esText" rows="3" required></textarea>
+            </div>
+            <!-- Required: English text -->
+            <div class="col-md-6">
+              <label class="form-label">English</label>
+              <textarea class="form-control" id="enText" rows="3" required></textarea>
+            </div>
+            <!-- Optional: notes -->
+            <div class="col-12">
+              <label class="form-label">Notes (optional)</label>
+              <textarea class="form-control" id="notes" rows="2"></textarea>
+            </div>
+            <!-- Optional: place card in one or more sets (none by default) -->
+            <div class="col-12">
+              <label class="form-label">Add to set (optional)</label>
+              <select id="cardSets" class="form-select" multiple size="4">
+                <option value="" disabled selected hidden>(no set)</option>
+                <!-- Add <option value="setId">Set Name</option> when you implement sets -->
+              </select>
+              <div class="form-text">Select one or more sets.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <!-- Closes modal without saving -->
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <!-- Triggers JS submit handler below -->
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Toast used for “Saved.” feedback after saving a card -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+    <div id="appToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Saved.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+<!-- =====================================
+    APP SCRIPT (localStorage + UI wiring)
+    ===================================== -->
+  <script>
+    /* ****************************************************
+    * A) STATE + DOM REFS
+    * **************************************************** */
+
+    // Container where card tiles will be rendered
+    const cardsGrid = document.getElementById('cardsGrid');
+
+    // Load saved cards from localStorage (persistent per browser)
+    // If nothing stored yet, use an empty array
+    let cards = JSON.parse(localStorage.getItem('cards')) || [];
+
+    // When not null, we are editing the card at this index
+    let editIndex = null;
+
+    // Refs for optional notes + the sets <select multiple>
+    const notesEl = document.getElementById('notes');
+    const setsEl  = document.getElementById('cardSets');
+
+    /* ****************************************************
+    * B) SETS HELPERS (placeholder only)
+    * - getSelectedSets(): read selected set IDs (ignore placeholder)
+    * - setSelectedSets(values): preselect given set IDs on edit
+    * **************************************************** */
+    function getSelectedSets() {
+    // Ignore any option with empty value ("") — that's the hidden placeholder
+    return Array.from(setsEl.options)
+        .filter(o => o.selected && o.value)
+        .map(o => o.value);
+    }
+    function setSelectedSets(values = []) {
+    Array.from(setsEl.options).forEach(o => { o.selected = values.includes(o.value); });
+    }
+
+        /* ****************************************************
+    * C) ADD/EDIT MODAL LIFECYCLE
+    * - Clicking any opener sets editIndex = null (add mode)
+    * - On show: if adding, fully reset the form and selections
+    * - On hide: clear any sticky selection (Safari quirk)
+    * **************************************************** */
+
+    // Any element opening #cardModal puts us in “add” mode
+    document.querySelectorAll('[data-bs-target="#cardModal"]').forEach(btn => {
+    btn.addEventListener('click', () => { editIndex = null; });
+    });
+
+    const cardModalEl = document.getElementById('cardModal');
+
+    // Before showing the modal, if we are adding, clear everything
+    cardModalEl.addEventListener('show.bs.modal', () => {
+    if (editIndex === null) {
+        const form = document.getElementById('cardForm');
+        form.reset();
+        notesEl.value = '';
+        Array.from(setsEl.options).forEach(o => { o.selected = false; });
+        setsEl.selectedIndex = -1; // extra insurance (Safari)
+    }
+    });
+
+    // After hiding the modal, clear any multiselect highlight
+    cardModalEl.addEventListener('hidden.bs.modal', () => {
+    Array.from(setsEl.options).forEach(o => { o.selected = false; });
+    setsEl.selectedIndex = -1;
+    });
+
+    /* ****************************************************
+    * D) RENDER CARDS GRID
+    * - Creates a Bootstrap card for each saved card
+    * - Shows Spanish, English, optional notes, and set badges
+    * - Adds Edit/Delete buttons with data-action attributes
+    * **************************************************** */
+    function renderCards() {
+    cardsGrid.innerHTML = ''; // clear
+
+    cards.forEach((card, index) => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+        col.innerHTML = `
+        <div class="card h-100" data-index="${index}">
+            <div class="card-body">
+            <div class="small text-muted">Spanish</div>
+            <h5 class="card-title mb-1">${card.es}</h5>
+
+            <div class="small text-muted">English</div>
+            <p class="card-text mb-2">${card.en}</p>
+
+            ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
+
+            ${
+                card.sets?.length
+                ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
+                    card.sets.map(s => `<span class="badge text-bg-light">${s}</span>`).join('') +
+                    `</div>`
+                : ``
+            }
+
+            <div class="d-flex justify-content-between">
+                <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
+                <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
+            </div>
+            </div>
+        </div>`;
+        cardsGrid.appendChild(col);
+    });
+    }
+
+    /* ****************************************************
+    * E) ADD/EDIT SUBMIT HANDLER
+    * - Reads form fields
+    * - If editing: updates existing card
+    * - Else: unshift() inserts new card at top
+    * - Persists to localStorage and re-renders
+    * - Closes modal and shows a toast
+    * **************************************************** */
+    document.getElementById('cardForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const es   = document.getElementById('esText').value.trim();
+    const en   = document.getElementById('enText').value.trim();
+    const notes= notesEl.value.trim();
+    const sets = getSelectedSets();
+
+    // Require both sides filled
+    if (!es || !en) return;
+
+    if (editIndex !== null) {
+        // Update existing card
+        cards[editIndex] = { ...cards[editIndex], es, en, notes, sets };
+        editIndex = null; // leave edit mode
+    } else {
+        // Add new card at the top
+        cards.unshift({ es, en, notes, sets });
+    }
+
+    // Persist entire array as JSON
+    localStorage.setItem('cards', JSON.stringify(cards));
+
+    // Update UI
+    renderCards();
+
+    // Close the modal (works whether first-open or existing instance)
+    const m = document.getElementById('cardModal');
+    (bootstrap.Modal.getInstance(m) || new bootstrap.Modal(m)).hide();
+
+    // Show "Saved." toast
+    new bootstrap.Toast(document.getElementById('appToast')).show();
+
+    // Reset form for next add
+    e.target.reset();
+    setSelectedSets([]);
+    });
+
+    /* ****************************************************
+    * F) ROW ACTIONS: DELETE / EDIT
+    * - Delegated click listener on the grid
+    * - Delete: remove from array, persist, re-render
+    * - Edit: preload fields, set editIndex, show modal
+    * **************************************************** */
+    cardsGrid.addEventListener('click', (e) => {
+    // DELETE
+    if (e.target.dataset.action === 'deleteCard') {
+        const idx = e.target.closest('[data-index]').dataset.index;
+        cards.splice(idx, 1);
+        localStorage.setItem('cards', JSON.stringify(cards));
+        renderCards();
+    }
+
+    // EDIT
+    if (e.target.dataset.action === 'editCard') {
+        const idx = Number(e.target.closest('[data-index]').dataset.index);
+        editIndex = idx;
+
+        // Preload modal fields
+        document.getElementById('esText').value = cards[idx].es || '';
+        document.getElementById('enText').value = cards[idx].en || '';
+        notesEl.value = cards[idx].notes || '';
+        setSelectedSets(cards[idx].sets || []);
+
+        // Open modal
+        const modal = new bootstrap.Modal(document.getElementById('cardModal'));
+        modal.show();
+    }
+    });
+
+    /* ****************************************************
+    * G) INITIAL RENDER: draw everything we have at load
+    * **************************************************** */
+    renderCards();
+
+    /* ****************************************************
+    * I) SEARCH FILTER
+    * - Simple client-side “contains” filter against each card tile’s text
+    * **************************************************** */
+    const searchInput = document.getElementById('searchCards');
+    searchInput.addEventListener('input', () => {
+    const term = searchInput.value.toLowerCase();
+    document.querySelectorAll('#cardsGrid .card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.parentElement.style.display = text.includes(term) ? '' : 'none';
+    });
+    });
+  </script>
+</main>
+{% endblock %}

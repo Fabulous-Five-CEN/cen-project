@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 import requests
 from . import cards_bp
 from app import db
@@ -14,7 +14,7 @@ LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 
 @cards_bp.route("/")
 def cards_home():
-    return jsonify({"page": "Cards"})
+    return render_template("cards.html")
 
 @cards_bp.route("/new", methods=["POST"])
 def new_card():
