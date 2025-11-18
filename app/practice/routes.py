@@ -4,19 +4,15 @@ from app.extensions import db
 from app.models.orm_objects import Card, User, SetTable, PracticeHistory
 from datetime import datetime, timezone
 
-@practice_bp.route("/")
-def practice_home():
-    return jsonify({"page": "Practice"})
-
 @practice_bp.route("/", defaults={"set_id": None})
 @practice_bp.route("/<int:set_id>")
 def practice(set_id):
     """Gets set associated with the set_id and user_id"""
-    user_id = request.args.get('user_id')
-    if not user_id:
+    user_id = request.args.get("user_id", type=int)
+    if user_id is None:
         return jsonify({"error": "user_id query parameter is required"}), 400
     
-    user = User.query.get(user_id)
+    user = User.query.filter_by(id=user_id).first()
     if not user:
         return jsonify({"error": "User not found"}), 404
     
