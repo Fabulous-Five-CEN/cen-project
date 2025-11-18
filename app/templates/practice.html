@@ -1,17 +1,23 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<main id="practice-page" class="container py-4">
-    <div class="row g-3 align-items-end">
+<main id="practice-page" class="container py-4 flex-grow-1">
+    <div class="mb-3">
+          <h4 class="section-title mb-0">Practice</h4>
+          <div class="section-subtitle">Quiz yourself using your saved cards.</div>
+        </div>
+
+        <div class="row g-3 align-items-end">
           <div class="col-md-4">
             <label class="form-label">Choose set</label>
+            <!-- PRODUCTION: "all" + user-created sets get appended here -->
             <select id="practiceSet" class="form-select">
               <option value="all">Practice All</option>
-              <!-- Later: add <option value="setId">Set Name</option> for real sets -->
             </select>
           </div>
           <div class="col-md-5">
             <label class="form-label d-block">Start side</label>
+            <!-- PRODUCTION: actually affects which side shows first in practice -->
             <div class="btn-group" role="group" aria-label="Start side">
               <input type="radio" class="btn-check" name="startSide" id="sideES" value="es" checked>
               <label class="btn btn-outline-primary" for="sideES">Spanish → English</label>
@@ -20,22 +26,26 @@
             </div>
           </div>
           <div class="col-md-3 text-md-end">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#practiceModal">Start Practice</button>
+            <!-- PRODUCTION: opens real practice modal, using the cards you created -->
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#practiceModal">
+              Start Practice
+            </button>
           </div>
         </div>
     
-      <!-- ======================================================
-       FULLSCREEN PRACTICE MODAL
-       - Shows one card front/back with flip/next/prev
-       - Uses a fixed sample deck below (not your saved cards)
-       ====================================================== -->
+      <!-- ========== MODAL: PRACTICE (PRODUCTION, client-side only) ========== -->
   <div class="modal fade" id="practiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header justify-content-between">
           <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Exit</button>
-          <!-- Progress indicator (updated in JS) -->
-          <span class="badge text-bg-primary" id="progressPill">0 / 10</span>
+
+          <!-- PRODUCTION: progress + status pills -->
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge text-bg-primary" id="progressPill">0 / 10</span>
+            <span class="badge rounded-pill d-none" id="statusPill"></span>
+          </div>
+
           <div class="btn-group">
             <button class="btn btn-outline-secondary btn-sm" id="shuffleBtn">Shuffle</button>
             <button class="btn btn-outline-danger btn-sm" id="resetBtn">Reset</button>
@@ -43,12 +53,19 @@
         </div>
 
         <div class="modal-body d-flex flex-column justify-content-center align-items-center">
-          <div class="position-relative border rounded p-4" style="min-width: min(90%,700px); min-height: 260px;">
-            <!-- This wrapper gets class "flipped" toggled to animate -->
+          <div class="practice-card-shell position-relative p-4 mx-auto"
+               style="min-width: min(90%,700px); min-height: 260px;">
             <div id="practiceCard" class="card-face">
+              <!-- PRODUCTION: content is overwritten by JS; initial text is just fallback -->
               <div class="front">
                 <div class="text-muted small mb-1" id="frontLabel">Spanish</div>
                 <h3 id="frontText" class="text-center">¿Cómo estás?</h3>
+
+                <!-- PRODUCTION: smaller "answer" text for extra clarity -->
+                <div id="answerReveal" class="answer-reveal mt-3">
+                  <div class="text-muted small">Answer:</div>
+                  <div id="answerRevealText" class="fw-semibold"></div>
+                </div>
               </div>
               <div class="back">
                 <div class="text-muted small mb-1" id="backLabel">English</div>
@@ -58,10 +75,13 @@
           </div>
         </div>
 
-        <div class="modal-footer justify-content-center">
-          <!-- Button handlers are attached in JS below -->
+        <!-- PRODUCTION: navigation + spaced-repetition-ish buttons -->
+        <div class="modal-footer flex-column flex-md-row justify-content-center gap-2">
           <button class="btn btn-outline-secondary" id="prevBtn">Previous</button>
           <button class="btn btn-secondary" id="flipBtn">Flip</button>
+          <button class="btn btn-outline-primary" id="showAnswerBtn">Show Answer</button>
+          <button class="btn btn-outline-success" id="gotItBtn">Got it ✅</button>
+          <button class="btn btn-outline-warning" id="learningBtn">Still learning</button>
           <button class="btn btn-outline-secondary" id="nextBtn">Next</button>
         </div>
       </div>
@@ -69,65 +89,277 @@
   </div>
 
   <script>
-    /* ****************************************************
-    * H) PRACTICE DEMO (fixed sample deck, independent of saved cards)
-    * - Simple index/flip/progress logic
-    * - Keyboard shortcuts enabled only while modal is open
-    * **************************************************** */
-    const deck = [
-      {es:'¿Cómo estás?', en:'How are you?'},
-      {es:'Gracias',       en:'Thank you'},
-      {es:'La película',   en:'The movie'},
-      {es:'¿Dónde está…?', en:'Where is…?'}
-    ];
-    let idx = 0;        // current card index
-    let seen = 0;       // how many fronts we’ve advanced beyond
-    let flipped = false;// current flip state
+      /* =========================================================
+     F) PRACTICE LOGIC (PRODUCTION, uses real cards/sets)
+     ========================================================= */
 
-    function renderCard(){
-      const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
+  const practiceCardEl   = document.getElementById('practiceCard');
+  const progressPill     = document.getElementById('progressPill');
+  const statusPill       = document.getElementById('statusPill');
+  const answerReveal     = document.getElementById('answerReveal');
+  const answerRevealText = document.getElementById('answerRevealText');
+  const showAnswerBtn    = document.getElementById('showAnswerBtn');
+  const gotItBtn         = document.getElementById('gotItBtn');
+  const learningBtn      = document.getElementById('learningBtn');
 
-      const frontLabel = sideES ? 'Spanish' : 'English';
-      const backLabel  = sideES ? 'English' : 'Spanish';
-      const frontText  = sideES ? deck[idx].es : deck[idx].en;
-      const backText   = sideES ? deck[idx].en : deck[idx].es;
+  let practiceDeck   = [];   // PRODUCTION: subset of cards[] plus _idx
+  let currentIndex   = 0;
+  let flipped        = false;
+  const statusByCard = {};   // PRODUCTION: per-card "gotit"/"learning" labels
 
-      document.getElementById('frontLabel').textContent = frontLabel;
-      document.getElementById('backLabel').textContent  = backLabel;
-      document.getElementById('frontText').textContent  = frontText;
-      document.getElementById('backText').textContent   = backText;
+  // PRODUCTION: build deck from cards[] based on chosen set
+  function buildPracticeDeck() {
+    const choice = practiceSetSelect.value;
 
-      document.getElementById('practiceCard').classList.toggle('flipped', flipped);
-      document.getElementById('progressPill').textContent = (seen) + ' / ' + deck.length;
+    // Add original index so we can key statusByCard
+    let all = cards.map((card, idx) => ({ ...card, _idx: idx }));
+
+    if (choice !== 'all') {
+      all = all.filter(c => Array.isArray(c.sets) && c.sets.includes(choice));
     }
-    renderCard();
 
-    document.getElementById('flipBtn').onclick = ()=>{ flipped = !flipped; renderCard(); };
-    document.getElementById('nextBtn').onclick = ()=>{
-      if(!flipped){ seen = Math.min(deck.length, seen+1); } // count only if we saw the front
-      flipped=false; idx=(idx+1)%deck.length; renderCard();
-    };
-    document.getElementById('prevBtn').onclick = ()=>{ flipped=false; idx=(idx-1+deck.length)%deck.length; renderCard(); };
-    document.getElementById('resetBtn').onclick= ()=>{ idx=0; seen=0; flipped=false; renderCard(); };
-    document.getElementById('shuffleBtn').onclick= ()=>{
-      // Fisher–Yates shuffle
-      for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
-      renderCard();
-    };
+    practiceDeck = all;
+    currentIndex = 0;
+    flipped      = false;
+    resetAnswerReveal();
+  }
 
-    // Enable arrow keys / spacebar only while practice modal is open
-    document.getElementById('practiceModal').addEventListener('shown.bs.modal', ()=>{
-      const keyHandler = (e)=>{
-        if(e.key==='ArrowRight') document.getElementById('nextBtn').click();
-        if(e.key==='ArrowLeft')  document.getElementById('prevBtn').click();
-        if(e.key===' ')          document.getElementById('flipBtn').click();
-      };
-      window.addEventListener('keydown', keyHandler);
-      document.getElementById('practiceModal').addEventListener('hidden.bs.modal',
-        ()=>window.removeEventListener('keydown', keyHandler),
-        {once:true}
-      );
+  // PRODUCTION: fill the big practice card with current entry
+  function renderPracticeCard() {
+    if (!practiceDeck.length) {
+      // Edge case: no cards in this set
+      document.getElementById('frontLabel').textContent = 'Spanish';
+      document.getElementById('backLabel').textContent  = 'English';
+      document.getElementById('frontText').textContent  = 'No cards in this set yet';
+      document.getElementById('backText').textContent   = '';
+      practiceCardEl.classList.remove('flipped');
+      progressPill.textContent = '0 / 0';
+      statusPill.classList.add('d-none');
+      statusPill.textContent = '';
+      return;
+    }
+
+    const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
+    const entry  = practiceDeck[currentIndex];
+    const card   = entry;
+
+    const frontLabel = sideES ? 'Spanish' : 'English';
+    const backLabel  = sideES ? 'English' : 'Spanish';
+    const frontText  = sideES ? card.es : card.en;
+    const backText   = sideES ? card.en : card.es;
+
+    document.getElementById('frontLabel').textContent = frontLabel;
+    document.getElementById('backLabel').textContent  = backLabel;
+    document.getElementById('frontText').textContent  = frontText;
+    document.getElementById('backText').textContent   = backText;
+
+    practiceCardEl.classList.toggle('flipped', flipped);
+
+    progressPill.textContent = `Card ${currentIndex + 1} / ${practiceDeck.length}`;
+
+    // Show "Got it" / "Still learning" pill
+    const st = statusByCard[entry._idx];
+    if (!st) {
+      statusPill.classList.add('d-none');
+      statusPill.textContent = '';
+    } else {
+      statusPill.classList.remove('d-none');
+      if (st === 'gotit') {
+        statusPill.textContent = 'Got it';
+        statusPill.className = 'badge rounded-pill text-bg-success';
+      } else {
+        statusPill.textContent = 'Still learning';
+        statusPill.className = 'badge rounded-pill text-bg-warning';
+      }
+    }
+  }
+
+  function resetAnswerReveal() {
+    answerReveal.classList.remove('open');
+    answerRevealText.textContent = '';
+    showAnswerBtn.textContent = 'Show Answer';
+  }
+
+  // PRODUCTION: flip via button
+  document.getElementById('flipBtn').onclick = () => {
+    flipped = !flipped;
+    renderPracticeCard();
+  };
+
+  // PRODUCTION: flip by clicking card
+  practiceCardEl.onclick = () => {
+    flipped = !flipped;
+    renderPracticeCard();
+  };
+
+  // PRODUCTION: reveal the "start side" text as smaller answer
+  showAnswerBtn.addEventListener('click', () => {
+    if (!practiceDeck.length) return;
+
+    const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
+    const entry  = practiceDeck[currentIndex];
+    const card   = entry;
+
+    // Show the answer text (which is the opposite side from what's shown)
+    answerRevealText.textContent = sideES ? card.en : card.es;
+
+    answerReveal.classList.toggle('open');
+    showAnswerBtn.textContent = answerReveal.classList.contains('open')
+      ? 'Hide Answer'
+      : 'Show Answer';
+  });
+
+  // PRODUCTION: mark card as got it / still learning (in-memory only)
+  function setStatus(status) {
+    if (!practiceDeck.length) return;
+    const entry = practiceDeck[currentIndex];
+    statusByCard[entry._idx] = status;
+    renderPracticeCard();
+  }
+
+  gotItBtn.addEventListener('click',    () => setStatus('gotit'));
+  learningBtn.addEventListener('click', () => setStatus('learning'));
+
+  // PRODUCTION: next / previous navigation
+  document.getElementById('nextBtn').onclick = () => {
+    if (!practiceDeck.length) return;
+    flipped = false;
+    currentIndex = (currentIndex + 1) % practiceDeck.length;
+    resetAnswerReveal();
+    renderPracticeCard();
+  };
+
+  document.getElementById('prevBtn').onclick = () => {
+    if (!practiceDeck.length) return;
+    flipped = false;
+    currentIndex = (currentIndex - 1 + practiceDeck.length) % practiceDeck.length;
+    resetAnswerReveal();
+    renderPracticeCard();
+  };
+
+  // PRODUCTION: reset clears progress + statuses
+  document.getElementById('resetBtn').onclick = () => {
+    if (!practiceDeck.length) return;
+    currentIndex = 0;
+    flipped      = false;
+    Object.keys(statusByCard).forEach(k => delete statusByCard[k]); // clear Got it / Still learning
+    resetAnswerReveal();
+    renderPracticeCard();
+  };
+
+  // PRODUCTION: shuffle deck in-place
+  document.getElementById('shuffleBtn').onclick = () => {
+    if (!practiceDeck.length) return;
+    for (let i = practiceDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [practiceDeck[i], practiceDeck[j]] = [practiceDeck[j], practiceDeck[i]];
+    }
+    currentIndex = 0;
+    flipped = false;
+    resetAnswerReveal();
+    renderPracticeCard();
+  };
+
+  // PRODUCTION: switching start side re-renders card
+  document.querySelectorAll('input[name="startSide"]').forEach(r => {
+    r.addEventListener('change', () => {
+      flipped = false;
+      resetAnswerReveal();
+      renderPracticeCard();
     });
+  });
+
+  // PRODUCTION: when Practice modal is triggered, build deck from real cards
+  document.querySelector('[data-bs-target="#practiceModal"]')
+    .addEventListener('click', () => {
+      buildPracticeDeck();
+      renderPracticeCard();
+    });
+
+    /* =========================================================
+     I) SWIPE HANDLING (PRODUCTION, but optional UX)
+     ========================================================= */
+
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+  const swipeThreshold = 60;
+
+  function handleStart(e) {
+    isDragging = true;
+    startX = e.touches ? e.touches[0].clientX : e.clientX;
+    currentX = startX;
+  }
+  function handleMove(e) {
+    if (!isDragging) return;
+    currentX = e.touches ? e.touches[0].clientX : e.clientX;
+    const delta = currentX - startX;
+    practiceCardEl.style.transform = `translateX(${delta}px)`;
+  }
+  function handleEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    const delta = currentX - startX;
+
+    if (delta < -swipeThreshold) {
+      // swipe left → next
+      practiceCardEl.style.transition = "transform .25s ease";
+      practiceCardEl.style.transform = "translateX(-400px)";
+      setTimeout(() => {
+        document.getElementById("nextBtn").click();
+        practiceCardEl.style.transition = "none";
+        practiceCardEl.style.transform = "translateX(400px)";
+        setTimeout(() => {
+          practiceCardEl.style.transition = "transform .25s ease";
+          practiceCardEl.style.transform = "translateX(0)";
+        }, 20);
+      }, 200);
+      return;
+    }
+
+    if (delta > swipeThreshold) {
+      // swipe right → previous
+      practiceCardEl.style.transition = "transform .25s ease";
+      practiceCardEl.style.transform = "translateX(400px)";
+      setTimeout(() => {
+        document.getElementById("prevBtn").click();
+        practiceCardEl.style.transition = "none";
+        practiceCardEl.style.transform = "translateX(-400px)";
+        setTimeout(() => {
+          practiceCardEl.style.transition = "transform .25s ease";
+          practiceCardEl.style.transform = "translateX(0)";
+        }, 20);
+      }, 200);
+      return;
+    }
+
+    // not far enough → snap back
+    practiceCardEl.style.transition = "transform .2s ease";
+    practiceCardEl.style.transform = "translateX(0)";
+  }
+
+  practiceCardEl.addEventListener("mousedown", handleStart);
+  practiceCardEl.addEventListener("mousemove", handleMove);
+  practiceCardEl.addEventListener("mouseup", handleEnd);
+  practiceCardEl.addEventListener("mouseleave", handleEnd);
+
+  practiceCardEl.addEventListener("touchstart", handleStart);
+  practiceCardEl.addEventListener("touchmove", handleMove);
+  practiceCardEl.addEventListener("touchend", handleEnd);
+
+// CLEAR FILTER: when user clicks "Clear filter", show all cards again
+const clearFilterBtn = document.getElementById('clearSetFilter');
+
+clearFilterBtn?.addEventListener('click', () => {
+  activeSetFilter = null;   // remove filter
+  renderCards();            // re-render all cards
+
+  // Switch back to All Cards tab (optional but nice)
+  const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
+  if (allCardsLink) {
+    allCardsLink.click();
+  }
+});
   </script>
 </main>
 {% endblock %}
