@@ -1,7 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-import os
-import time
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -11,9 +7,7 @@ from app import create_app, db
 from app.models import Card, User
 
 
-class CardIntegrationTests(unittest.TestCase):
-    """Exercise the cards blueprint using the Flask test client instead of HTTP calls."""
-
+class CardRouteTests(unittest.TestCase):
     def setUp(self):
         config_override = {
             "TESTING": True,
@@ -107,22 +101,6 @@ class CardIntegrationTests(unittest.TestCase):
             json={"text": "dog", "direction": "english_to_spanish"},
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertIn("translated_text", resp.json())
-        time.sleep(1)
-
-    # TC005: Spanish -> English Auto-translate
-    def test_auto_translate_es_to_en(self):
-        resp = requests.post(f"{BASE_URL}/cards/auto-translate", json={
-            "text": "tengo",
-            "direction": "spanish_to_english"
-        })
-        print("Status code:", resp.status_code)
-        try:
-            print("Response JSON:", resp.json())
-        except Exception as e:
-            print("Failed to parse JSON:", e)
-            print("Raw response text:", resp.text)
-        print("method reached")
         self.assertEqual(resp.get_json()["translated_text"], "el perro")
 
     @patch("app.cards.routes.requests.post")

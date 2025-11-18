@@ -32,7 +32,7 @@ def practice(set_id):
     else:
     # or if set_id is blank (no json was retrieved, so no set was selected, we assume the user wants to do ALL their cards)
         # retrieve all cards associated with the user
-        cards = user.cards
+        cards = Card.query.filter_by(user_id=user.id).all()
 
     # create dict object returning all card information to the frontend via json
 
