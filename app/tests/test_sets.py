@@ -1,116 +1,128 @@
-from dotenv import load_dotenv
-load_dotenv()
-import os
 import unittest
-import requests
 
-# Config
-APP_PORT = os.environ.get("APP_PORT", "8025")
-BACKEND_HOST = os.environ.get("BACKEND_HOST", "http://localhost")
-BASE_URL = f"{BACKEND_HOST}:{APP_PORT}"
-USER_ID = int(os.environ.get("TEST_USER_ID", "2"))
+from sqlalchemy.pool import StaticPool
+
+from app import create_app, db
+from app.models import Card, SetTable, User
 
 
-class SetIntegrationTests(unittest.TestCase):
+class SetRouteTests(unittest.TestCase):
     def setUp(self):
-        self.created_set_ids = []
-        self.created_card_ids = []
+        config_override = {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+            "SQLALCHEMY_ENGINE_OPTIONS": {
+                "poolclass": StaticPool,
+                "connect_args": {"check_same_thread": False},
+            },
+        }
+        self.app = create_app(config_override)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+        self.client = self.app.test_client()
+
+        self.user = User(
+            email="sets@test.com",
+            password_hash="hashed",
+            display_name="Set User",
+        )
+        db.session.add(self.user)
+        db.session.commit()
 
     def tearDown(self):
-        for set_id in self.created_set_ids:
-            requests.delete(f"{BASE_URL}/sets/delete/{set_id}")
-        
-        for card_id in self.created_card_ids:
-            requests.delete(f"{BASE_URL}/cards/delete/{card_id}")
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
-    def _create_set(self, name="Test Set", description="A temporary set for testing."):
-        payload = {"name": name, "description": description, "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/sets/new", json=payload)
-        self.assertEqual(resp.status_code, 201, f"Failed to create helper set. Response: {resp.text}")
-        set_id = resp.json()["set"]["id"]
-        self.created_set_ids.append(set_id)
-        return set_id
+    def _create_set_direct(self, name="Test Set", description="temp set"):
+        set_obj = SetTable(name=name, description=description, user_id=self.user.id)
+        db.session.add(set_obj)
+        db.session.commit()
+        return set_obj
 
-    def _create_card(self, english="test word", spanish="palabra de prueba"):
-        payload = {"english_text": english, "spanish_text": spanish, "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
-        self.assertEqual(resp.status_code, 201, f"Failed to create helper card. Response: {resp.text}")
-        card_id = resp.json()["card"]["id"]
-        self.created_card_ids.append(card_id)
-        return card_id
+    def _create_card_direct(self, english="test word", spanish="palabra de prueba"):
+        card = Card(
+            english_text=english,
+            spanish_text=spanish,
+            user_id=self.user.id,
+        )
+        db.session.add(card)
+        db.session.commit()
+        return card
 
     def test_create_set_success(self):
         payload = {
             "name": "Kitchen Vocabulary",
             "description": "Words for things found in the kitchen.",
-            "user_id": USER_ID
+            "user_id": self.user.id,
         }
-        resp = requests.post(f"{BASE_URL}/sets/new", json=payload)
+        resp = self.client.post("/sets/new", json=payload)
         self.assertEqual(resp.status_code, 201)
-        data = resp.json()
-        self.assertEqual(data["set"]["name"], "Kitchen Vocabulary")
-        self.created_set_ids.append(data["set"]["id"])
+        self.assertEqual(resp.get_json()["set"]["name"], "Kitchen Vocabulary")
 
     def test_create_set_missing_name_fails(self):
-        payload = {"description": "A set without a name.", "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/sets/new", json=payload)
+        payload = {"description": "A set without a name.", "user_id": self.user.id}
+        resp = self.client.post("/sets/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
     def test_edit_set_success(self):
-        set_id = self._create_set()
-        update_payload = {"name": "Updated Set Name", "description": "Updated description."}
+        set_obj = self._create_set_direct()
+        update_payload = {
+            "name": "Updated Set Name",
+            "description": "Updated description.",
+        }
 
-        resp = requests.put(f"{BASE_URL}/sets/edit/{set_id}", json=update_payload)
+        resp = self.client.put(f"/sets/edit/{set_obj.id}", json=update_payload)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["set"]["name"], "Updated Set Name")
+        self.assertEqual(resp.get_json()["set"]["name"], "Updated Set Name")
 
     def test_delete_set_success(self):
-        set_id = self._create_set()
+        set_obj = self._create_set_direct()
 
-        resp = requests.delete(f"{BASE_URL}/sets/delete/{set_id}")
+        resp = self.client.delete(f"/sets/delete/{set_obj.id}")
         self.assertEqual(resp.status_code, 200)
-        get_resp = requests.get(f"{BASE_URL}/sets/{set_id}")
+        get_resp = self.client.get(f"/sets/{set_obj.id}")
         self.assertEqual(get_resp.status_code, 404)
-        self.created_set_ids.remove(set_id)
 
     def test_get_all_sets_for_user(self):
-        self._create_set(name="Set One")
-        self._create_set(name="Set Two")
-        resp = requests.get(f"{BASE_URL}/sets/", params={"user_id": USER_ID})
+        self._create_set_direct(name="Set One")
+        self._create_set_direct(name="Set Two")
+        resp = self.client.get(f"/sets/?user_id={self.user.id}")
         self.assertEqual(resp.status_code, 200)
-        data = resp.json()
+        data = resp.get_json()
         self.assertIsInstance(data, list)
         self.assertEqual(len(data), 2)
-        set_names = {item['name'] for item in data}
+        set_names = {item["name"] for item in data}
         self.assertIn("Set One", set_names)
         self.assertIn("Set Two", set_names)
 
     def test_add_card_to_set_success(self):
-        set_id = self._create_set()
-        card_id = self._create_card()
-        payload = {"card_ids": [card_id]} 
+        set_obj = self._create_set_direct()
+        card = self._create_card_direct()
+        payload = {"card_ids": [card.id]}
 
-        resp = requests.post(f"{BASE_URL}/sets/add_card/{set_id}", json=payload)
+        resp = self.client.post(f"/sets/add_card/{set_obj.id}", json=payload)
         self.assertEqual(resp.status_code, 200)
-        details_resp = requests.get(f"{BASE_URL}/sets/{set_id}")
+        details_resp = self.client.get(f"/sets/{set_obj.id}")
         self.assertEqual(details_resp.status_code, 200)
-        card_ids_in_set = [card['id'] for card in details_resp.json()['cards']]
-        self.assertIn(card_id, card_ids_in_set)
+        card_ids_in_set = [card_json["id"] for card_json in details_resp.get_json()["cards"]]
+        self.assertIn(card.id, card_ids_in_set)
 
     def test_remove_card_from_set_success(self):
-        set_id = self._create_set()
-        card_id = self._create_card()
-  
-        requests.post(f"{BASE_URL}/sets/add_card/{set_id}", json={"card_ids": [card_id]})
-        
-        remove_payload = {"card_id": card_id}
+        set_obj = self._create_set_direct()
+        card = self._create_card_direct()
 
-        resp = requests.post(f"{BASE_URL}/sets/delete_card/{set_id}", json=remove_payload)
+        self.client.post(f"/sets/add_card/{set_obj.id}", json={"card_ids": [card.id]})
+
+        remove_payload = {"card_id": card.id}
+        resp = self.client.post(f"/sets/delete_card/{set_obj.id}", json=remove_payload)
         self.assertEqual(resp.status_code, 200)
-        
-        details_resp = requests.get(f"{BASE_URL}/sets/{set_id}")
+
+        details_resp = self.client.get(f"/sets/{set_obj.id}")
         self.assertEqual(details_resp.status_code, 200)
-        self.assertEqual(len(details_resp.json()['cards']), 0)
+        self.assertEqual(len(details_resp.get_json()["cards"]), 0)
 
 
 if __name__ == "__main__":

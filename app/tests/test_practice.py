@@ -1,86 +1,113 @@
-from dotenv import load_dotenv
-load_dotenv()
-import os
 import unittest
-import requests
 
-APP_PORT = os.environ.get("APP_PORT", "8025")
-BACKEND_HOST = os.environ.get("BACKEND_HOST", "http://localhost")
-BASE_URL = f"{BACKEND_HOST}:{APP_PORT}"
-USER_ID = int(os.environ.get("TEST_USER_ID", "2"))
+from sqlalchemy.pool import StaticPool
+
+from app import create_app, db
+from app.models import Card, PracticeHistory, SetTable, User
 
 
-class PracticeIntegrationWithSeed(unittest.TestCase):
+class PracticeRouteTests(unittest.TestCase):
     def setUp(self):
-        self.created_set_ids = []
-        self.created_card_ids = []
+        config_override = {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+            "SQLALCHEMY_ENGINE_OPTIONS": {
+                "poolclass": StaticPool,
+                "connect_args": {"check_same_thread": False},
+            },
+        }
+        self.app = create_app(config_override)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+        self.client = self.app.test_client()
+
+        self.user = User(
+            email="practice@test.com",
+            password_hash="hashed",
+            display_name="Practice User",
+        )
+        db.session.add(self.user)
+        db.session.commit()
 
     def tearDown(self):
-        for set_id in self.created_set_ids:
-            requests.delete(f"{BASE_URL}/sets/delete/{set_id}")
-        for card_id in self.created_card_ids:
-            requests.delete(f"{BASE_URL}/cards/delete/{card_id}")
-
-    def _create_set(self, name, description=""):
-        payload = {"name": name, "description": description, "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/sets/new", json=payload)
-        self.assertEqual(resp.status_code, 201, f"Failed to create set. Response: {resp.text}")
-        set_id = resp.json()["set"]["id"]
-        self.created_set_ids.append(set_id)
-        return set_id
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
 
     def _create_card(self, english, spanish):
-        payload = {"english_text": english, "spanish_text": spanish, "user_id": USER_ID}
-        resp = requests.post(f"{BASE_URL}/cards/new", json=payload)
-        self.assertEqual(resp.status_code, 201, f"Failed to create card. Response: {resp.text}")
-        card_id = resp.json()["card"]["id"]
-        self.created_card_ids.append(card_id)
-        return card_id
+        card = Card(
+            english_text=english,
+            spanish_text=spanish,
+            user_id=self.user.id,
+        )
+        db.session.add(card)
+        db.session.commit()
+        return card
 
-    def test_seed_and_practice(self):
+    def _create_set(self, name, description="", cards=None):
+        set_obj = SetTable(
+            name=name,
+            description=description,
+            user_id=self.user.id,
+        )
+        db.session.add(set_obj)
+        if cards:
+            set_obj.cards.extend(cards)
+        db.session.commit()
+        return set_obj
 
-        # CREATE SETS WITH OVERLAPPING CARDS
-        set1_id = self._create_set("Household Objects", "objects you would find in a house")
-        set2_id = self._create_set("School Vocabulary", "objects and concepts in a school")
+    def test_practice_returns_cards_for_specific_set(self):
+        common_cards = [
+            self._create_card("House", "La casa"),
+            self._create_card("Chair", "La silla"),
+        ]
+        household_cards = common_cards + [
+            self._create_card("Kitchen", "La cocina"),
+            self._create_card("Table", "La mesa"),
+        ]
+        school_cards = common_cards + [
+            self._create_card("Teacher", "El maestro"),
+            self._create_card("Pencil", "El lápiz"),
+        ]
 
-        card1_id = self._create_card("House", "La casa")
-        card2_id = self._create_card("Table", "La mesa")
-        card3_id = self._create_card("Chair", "La silla")
-        card4_id = self._create_card("Desk", "El escritorio")
-        card5_id = self._create_card("Bed", "La cama")
-        card6_id = self._create_card("Kitchen", "La cocina")
+        set_house = self._create_set(
+            "Household Objects", "objects you would find in a house", household_cards
+        )
+        set_school = self._create_set(
+            "School Vocabulary", "objects and concepts in a school", school_cards
+        )
 
-        card7_id = self._create_card("School", "La escuela")
-        card8_id = self._create_card("Teacher", "El maestro / La maestra")
-        card9_id = self._create_card("Pen", "El bolígrafo")
-        card10_id = self._create_card("Pencil", "El lápiz")
+        resp_house = self.client.get(f"/practice/{set_house.id}?user_id={self.user.id}")
+        resp_school = self.client.get(
+            f"/practice/{set_school.id}?user_id={self.user.id}"
+        )
 
-        # ADD TO SETS
-        requests.post(f"{BASE_URL}/sets/add_card/{set1_id}", json={"card_ids": [card1_id, card2_id, card3_id, card4_id, card5_id, card6_id]})
-        requests.post(f"{BASE_URL}/sets/add_card/{set2_id}", json={"card_ids": [card3_id, card4_id, card7_id, card8_id, card9_id, card10_id]})
+        self.assertEqual(resp_house.status_code, 200)
+        self.assertEqual(len(resp_house.get_json()), len(household_cards))
+        self.assertEqual(resp_school.status_code, 200)
+        self.assertEqual(len(resp_school.get_json()), len(school_cards))
 
-        # PRINT DATA TO CONFIRM
-        for set_id in [set1_id, set2_id]:
-            url = f"{BASE_URL}/practice/{set_id}"
-            params = {"user_id": USER_ID}
-            resp = requests.get(url, params=params)
-            self.assertEqual(resp.status_code, 200, f"Unexpected response: {resp.status_code}, {resp.text}")
-            data = resp.json()
-            self.assertIsInstance(data, list)
-            print(f"\nCards in set {set_id}:")
-            for card in data:
-                print(f"  ID: {card['id']} | EN: {card['english_text']} | ES: {card['spanish_text']}")
+        # Ensure PracticeHistory entries were recorded
+        self.assertEqual(
+            PracticeHistory.query.filter_by(user_id=self.user.id).count(),
+            len(household_cards) + len(school_cards),
+        )
 
+    def test_practice_without_set_returns_all_cards(self):
+        for english, spanish in [("Dog", "El perro"), ("Cat", "El gato")]:
+            self._create_card(english, spanish)
 
-    # MAKE SURE AN INVALID SET ID IS REJECTED
+        resp = self.client.get(f"/practice/?user_id={self.user.id}")
+        data = resp.get_json()
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(data), 2)
+
     def test_invalid_set_id(self):
-        invalid_set_id = 999999
-        url = f"{BASE_URL}/practice/{invalid_set_id}"
-        params = {"user_id": USER_ID}
-        resp = requests.get(url, params=params)
-        self.assertIn(resp.status_code, [404, 400])
-        data = resp.json()
-        self.assertIn("error", data)
+        resp = self.client.get(f"/practice/99999?user_id={self.user.id}")
+        self.assertEqual(resp.status_code, 404)
+        self.assertIn("error", resp.get_json())
 
 
 if __name__ == "__main__":

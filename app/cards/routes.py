@@ -38,7 +38,7 @@ def new_card():
 
     # Check that user is in database
 
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
     
@@ -76,7 +76,7 @@ def edit_card(card_id):
 
     data = request.get_json() or {}
 
-    card = Card.query.get(card_id)
+    card = db.session.get(Card, card_id)
     if not card:
             return jsonify({"Error" : f"No card exists in database with id {card_id}"}), 404
     
@@ -118,7 +118,7 @@ def edit_card(card_id):
 
 @cards_bp.route("/delete/<int:card_id>", methods = ["DELETE"])
 def delete_card(card_id):
-    card = Card.query.get(card_id)
+    card = db.session.get(Card, card_id)
     if not card:
         return jsonify({"error": f"No card found with id {card_id}"}), 404
 
