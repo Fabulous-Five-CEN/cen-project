@@ -124,7 +124,7 @@ const userSetsList      = document.getElementById('userSetsList');
                     activeSetFilter = name;          // remember which set we're showing
                     renderCards();                   // re-render All Cards using filter
 
-                    window.location.href = 'cards.html';
+                    window.location.href = '/cards';
                     return;
                 }
 
