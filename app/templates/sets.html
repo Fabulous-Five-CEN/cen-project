@@ -1,38 +1,83 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<main id="sets-page" class="container py-4">
+
+<!-- ========== My Sets (MOSTLY PRODUCTION, some TODO) ========== -->
+<main id="sets-page" class="container py-4 flex-grow-1">
+    <div class="mb-3">
+        <h4 class="section-title mb-0">My Sets</h4>
+        <div class="section-subtitle">Organize cards into custom study sets.</div>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">My Sets</h5>
+        <!-- PRODUCTION: opens New Set modal; creates real set names -->
         <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#setEditModal" data-set-id="">
             New Set +
         </button>
     </div>
 
-    <div class="accordion" id="setsAccordion">
+    <div id="setsArea">
+        <!-- PRODUCTION UI, but "No sets yet" message is only visible when userSets is empty -->
+        <div id="emptySetsMessage" class="text-center py-5">
+            <div class="mb-3"
+                style="width:72px;height:72px;margin:0 auto;border-radius:50%;
+                background:linear-gradient(135deg,#eef2ff,#e0f2fe);
+                display:flex;align-items:center;justify-content:center;
+                box-shadow:0 4px 15px rgba(0,0,0,0.04);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+                    fill="none" stroke="#3b82f6" stroke-width="1.5">
+                    <path d="M4 7h16l4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z"/>
+                </svg>
+            </div>
+
+            <h5 class="fw-semibold mb-1">No sets yet</h5>
+            <p class="text-muted mb-2">
+                Create a study set to organize your flashcards into categories.
+            </p>
+
+            <button class="btn btn-primary mb-2"
+                data-bs-toggle="modal"
+                data-bs-target="#setEditModal">
+                New Set +
+            </button>
+
+            <p class="text-muted small mb-0">
+                Tip: your sets will appear here once you save them.
+            </p>
         </div>
+
+        <!-- PRODUCTION: this gets filled from localStorage "userSets"
+            NOTE: badge shows "0 cards" = TODO to make fully productiony -->
+        <div id="userSetsList" class="mt-3 d-flex flex-column gap-2"></div>
+
+        <!-- NOTE: the old demo accordions were removed on purpose.
+            If you ever want demo sets back, put them here. -->
+
+    </div> 
+    <!-- /#setsArea -->
     
-      <!-- ===========================================
-       EDIT SET MODAL (skeleton UI, not wired yet)
-       =========================================== -->
+    <!-- ========== MODAL: EDIT / CREATE SET (PRODUCTION UI, minimal logic) ========== -->
     <div class="modal fade" id="setEditModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-        <form class="modal-content" id="setForm" novalidate>
-            <div class="modal-header">
-            <h5 class="modal-title">Edit Set</h5>
-            <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-            <label class="form-label" for="setName">Name</label>
-            <input id="setName" class="form-control" required>
-            <label class="form-label mt-3" for="setDesc">Description</label>
-            <textarea id="setDesc" class="form-control" rows="2"></textarea>
-            </div>
-            <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary" type="submit">Save</button>
-            </div>
-        </form>
+            <form class="modal-content" id="setForm" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Set</h5>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label class="form-label" for="setName">Name</label>
+                    <input id="setName" class="form-control" required>
+                    <label class="form-label mt-3" for="setDesc">Description</label>
+                    <textarea id="setDesc" class="form-control" rows="2"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Save</button>
+                </div>
+            </form>
         </div>
     </div>
 </main>

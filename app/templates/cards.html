@@ -1,28 +1,42 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<main id="cards-page" class="container py-4">
-    <div class="d-flex gap-2 align-items-center mb-3">
-        <input id="searchCards" class="form-control" placeholder="Search cards…">
-        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
-            Add Card +
-        </button>
+
+<!-- ========== All Cards (PRODUCTION) ========== -->
+<main id="cards-page" class="container py-4 flex-grow-1">
+  <div class="d-flex gap-2 justify-content-between mb-2">
+    <div>
+      <h4 class="section-title mb-0">All Cards</h4>
+      <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
     </div>
 
-    <div id="cardsGrid" class="row g-3"></div>
+    <div class="d-flex gap-2 align-items-center mb-3">
+      <!-- PRODUCTION: live search filter -->
+      <input id="searchCards" class="form-control" placeholder="Search cards…">
+      <!-- PRODUCTION: opens real Add/Edit card modal -->
+      <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
+        Add Card +
+      </button>
+    </div>
 
-      <!-- =========================
-       Floating “+” Add Card button
-       Opens the same #cardModal as the toolbar button
-       ========================= -->
+    <div id="activeSetIndicator" class="alert alert-secondary py-1 px-2 d-inline-flex align-items-center small d-none mb-3">
+      <span id="activeSetLabel" class="me-2"></span>
+      <button id="clearSetFilter"
+        type="button"
+        class="btn btn-sm btn-outline-secondary">
+        Clear filter
+      </button>
+    </div>
+  </div>
+
+  <!-- PRODUCTION: populated from localStorage "cards" -->
+  <div id="cardsGrid" class="row g-3"></div>
+
+  <!-- PRODUCTION: floating Add Card button (same as toolbar button) -->
   <button class="btn btn-primary rounded-circle fab shadow" style="width:56px;height:56px"
           data-bs-toggle="modal" data-bs-target="#cardModal" aria-label="Add card">+</button>
 
-  <!-- =====================================================
-       ADD / EDIT CARD MODAL
-       - Single modal used for both creating and editing a card
-       - We track “editIndex” in JS to know which mode we’re in
-       ===================================================== -->
+  <!-- ========== MODAL: ADD / EDIT CARD (PRODUCTION) ========== -->
   <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <form class="modal-content" id="cardForm" novalidate>
@@ -33,27 +47,27 @@
 
         <div class="modal-body">
           <div class="row g-3">
-            <!-- Required: Spanish text -->
             <div class="col-md-6">
               <label class="form-label">Spanish</label>
               <textarea class="form-control" id="esText" rows="3" required></textarea>
             </div>
-            <!-- Required: English text -->
+
             <div class="col-md-6">
               <label class="form-label">English</label>
               <textarea class="form-control" id="enText" rows="3" required></textarea>
             </div>
-            <!-- Optional: notes -->
+
             <div class="col-12">
               <label class="form-label">Notes (optional)</label>
               <textarea class="form-control" id="notes" rows="2"></textarea>
             </div>
-            <!-- Optional: place card in one or more sets (none by default) -->
+
             <div class="col-12">
+              <!-- PRODUCTION: lets you assign a card to one or more sets -->
               <label class="form-label">Add to set (optional)</label>
               <select id="cardSets" class="form-select" multiple size="4">
-                <option value="" disabled selected hidden>(no set)</option>
-                <!-- Add <option value="setId">Set Name</option> when you implement sets -->
+                <!-- placeholder hidden by CSS; kept so <select> never looks empty -->
+                <option value="" disabled hidden>(no set)</option>
               </select>
               <div class="form-text">Select one or more sets.</div>
             </div>
@@ -61,16 +75,14 @@
         </div>
 
         <div class="modal-footer">
-          <!-- Closes modal without saving -->
           <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <!-- Triggers JS submit handler below -->
           <button class="btn btn-primary" type="submit">Save</button>
         </div>
       </form>
     </div>
   </div>
   
-  <!-- Toast used for “Saved.” feedback after saving a card -->
+  <!-- PRODUCTION: Toast used when saving cards -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
     <div id="appToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
       <div class="d-flex">
