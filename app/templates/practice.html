@@ -90,65 +90,6 @@
   </div>
 
   <script>
-    /* ****************************************************
-    * H) PRACTICE DEMO (fixed sample deck, independent of saved cards)
-    * - Simple index/flip/progress logic
-    * - Keyboard shortcuts enabled only while modal is open
-    * **************************************************** */
-    const deck = [
-      {es:'¿Cómo estás?', en:'How are you?'},
-      {es:'Gracias',       en:'Thank you'},
-      {es:'La película',   en:'The movie'},
-      {es:'¿Dónde está…?', en:'Where is…?'}
-    ];
-    let idx = 0;        // current card index
-    let seen = 0;       // how many fronts we’ve advanced beyond
-    let flipped = false;// current flip state
-
-    function renderCard(){
-      const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
-
-      const frontLabel = sideES ? 'Spanish' : 'English';
-      const backLabel  = sideES ? 'English' : 'Spanish';
-      const frontText  = sideES ? deck[idx].es : deck[idx].en;
-      const backText   = sideES ? deck[idx].en : deck[idx].es;
-
-      document.getElementById('frontLabel').textContent = frontLabel;
-      document.getElementById('backLabel').textContent  = backLabel;
-      document.getElementById('frontText').textContent  = frontText;
-      document.getElementById('backText').textContent   = backText;
-
-      document.getElementById('practiceCard').classList.toggle('flipped', flipped);
-      document.getElementById('progressPill').textContent = (seen) + ' / ' + deck.length;
-    }
-    renderCard();
-
-    document.getElementById('flipBtn').onclick = ()=>{ flipped = !flipped; renderCard(); };
-    document.getElementById('nextBtn').onclick = ()=>{
-      if(!flipped){ seen = Math.min(deck.length, seen+1); } // count only if we saw the front
-      flipped=false; idx=(idx+1)%deck.length; renderCard();
-    };
-    document.getElementById('prevBtn').onclick = ()=>{ flipped=false; idx=(idx-1+deck.length)%deck.length; renderCard(); };
-    document.getElementById('resetBtn').onclick= ()=>{ idx=0; seen=0; flipped=false; renderCard(); };
-    document.getElementById('shuffleBtn').onclick= ()=>{
-      // Fisher–Yates shuffle
-      for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
-      renderCard();
-    };
-
-    // Enable arrow keys / spacebar only while practice modal is open
-    document.getElementById('practiceModal').addEventListener('shown.bs.modal', ()=>{
-      const keyHandler = (e)=>{
-        if(e.key==='ArrowRight') document.getElementById('nextBtn').click();
-        if(e.key==='ArrowLeft')  document.getElementById('prevBtn').click();
-        if(e.key===' ')          document.getElementById('flipBtn').click();
-      };
-      window.addEventListener('keydown', keyHandler);
-      document.getElementById('practiceModal').addEventListener('hidden.bs.modal',
-        ()=>window.removeEventListener('keydown', keyHandler),
-        {once:true}
-      );
-    });
   </script>
 </main>
 {% endblock %}
