@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 @sets_bp.route("/")
 def sets_home():
     return render_template("sets.html")
+
 def serialize_set(set_obj):
     """Converts a SetTable object into a JSON-friendly dictionary."""
     return {
@@ -26,7 +27,7 @@ def get_set_or_404(set_id, description=None):
     return set_obj
 
 
-@sets_bp.route("/", methods=["GET"])
+@sets_bp.route("/all", methods=["GET"])
 def get_all_sets():
     """Gets all sets associated with a specific user_id."""
     user_id = request.args.get('user_id', type=int)

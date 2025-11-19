@@ -79,10 +79,9 @@ class PracticeRouteTests(unittest.TestCase):
             "School Vocabulary", "objects and concepts in a school", school_cards
         )
 
-        resp_house = self.client.get(f"/practice/{set_house.id}?user_id={self.user.id}")
-        resp_school = self.client.get(
-            f"/practice/{set_school.id}?user_id={self.user.id}"
-        )
+        resp_house = self.client.get(f"/practice/set/{set_house.id}?user_id={self.user.id}")
+        resp_school = self.client.get(f"/practice/set/{set_school.id}?user_id={self.user.id}")
+
 
         self.assertEqual(resp_house.status_code, 200)
         self.assertEqual(len(resp_house.get_json()), len(household_cards))
@@ -99,13 +98,13 @@ class PracticeRouteTests(unittest.TestCase):
         for english, spanish in [("Dog", "El perro"), ("Cat", "El gato")]:
             self._create_card(english, spanish)
 
-        resp = self.client.get(f"/practice/?user_id={self.user.id}")
+        resp = self.client.get(f"/practice/set?user_id={self.user.id}")
         data = resp.get_json()
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(data), 2)
 
     def test_invalid_set_id(self):
-        resp = self.client.get(f"/practice/99999?user_id={self.user.id}")
+        resp = self.client.get(f"/practice/set/99999?user_id={self.user.id}")
         self.assertEqual(resp.status_code, 404)
         self.assertIn("error", resp.get_json())
 

@@ -89,7 +89,7 @@ class SetRouteTests(unittest.TestCase):
     def test_get_all_sets_for_user(self):
         self._create_set_direct(name="Set One")
         self._create_set_direct(name="Set Two")
-        resp = self.client.get(f"/sets/?user_id={self.user.id}")
+        resp = self.client.get(f"/sets/all?user_id={self.user.id}")
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertIsInstance(data, list)

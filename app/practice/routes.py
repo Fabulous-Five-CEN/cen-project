@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 def practice_home():
     return render_template("practice.html")
   
-@practice_bp.route("/", defaults={"set_id": None})
-@practice_bp.route("/<int:set_id>")
+@practice_bp.route("/set", defaults={"set_id": None})
+@practice_bp.route("/set/<int:set_id>")
 def practice(set_id):
     """Gets set associated with the set_id and user_id"""
     user_id = request.args.get("user_id", type=int)
