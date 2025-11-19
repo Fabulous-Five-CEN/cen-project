@@ -124,6 +124,7 @@ const userSetsList      = document.getElementById('userSetsList');
                     activeSetFilter = name;          // remember which set we're showing
                     renderCards();                   // re-render All Cards using filter
 
+                    localStorage.setItem('activeSetFilter', name);
                     window.location.href = '/cards';
                     return;
                 }
@@ -160,7 +161,7 @@ const userSetsList      = document.getElementById('userSetsList');
 
                     // 5) If we were viewing this set, clear the filter
                     if (activeSetFilter === name) {
-                    activeSetFilter = null;
+                        activeSetFilter = null;
                     }
 
                     // 6) Re-render UI
@@ -225,7 +226,7 @@ const userSetsList      = document.getElementById('userSetsList');
                     
                     // Update active filter if it was showing this set
                     if (activeSetFilter === oldName) {
-                    activeSetFilter = name;
+                        activeSetFilter = name;
                     }
                 }
                 

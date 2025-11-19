@@ -43,7 +43,8 @@
       }
 
       // NEW: which set (if any) is being viewed on the All Cards tab
-      let activeSetFilter = null;
+      let activeSetFilter = localStorage.getItem('activeSetFilter');
+      localStorage.removeItem('activeSetFilter');
       let editIndex = null; // PRODUCTION: index into cards[] when editing
       let editSetIndex = null; // Index into userSets[] when editing a set
     </script>
