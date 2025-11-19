@@ -125,9 +125,9 @@ const userSetsList      = document.getElementById('userSetsList');
                     renderCards();                   // re-render All Cards using filter
 
                     // switch navbar to "All Cards" tab
-                    const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
+                    const allCardsLink = document.getElementById('cards-page');
                     if (allCardsLink) {
-                    allCardsLink.click();
+                        allCardsLink.click();
                     }
                     return;
                 }

@@ -297,7 +297,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
         renderCards();            // re-render all cards
 
         // Switch back to All Cards tab (optional but nice)
-        const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
+        const allCardsLink = document.getElementById('cards-page');
         if (allCardsLink) {
           allCardsLink.click();
         }
