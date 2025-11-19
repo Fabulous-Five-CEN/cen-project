@@ -297,9 +297,6 @@ window.practiceSetSelect = document.getElementById('practiceSet');
         renderCards();            // re-render all cards
 
         // Switch back to All Cards tab (optional but nice)
-        const allCardsLink = document.getElementById('cards-page');
-        if (allCardsLink) {
-          allCardsLink.click();
-        }
+        window.location.href = 'cards.html';
       });
     }

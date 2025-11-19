@@ -124,11 +124,7 @@ const userSetsList      = document.getElementById('userSetsList');
                     activeSetFilter = name;          // remember which set we're showing
                     renderCards();                   // re-render All Cards using filter
 
-                    // switch navbar to "All Cards" tab
-                    const allCardsLink = document.getElementById('cards-page');
-                    if (allCardsLink) {
-                        allCardsLink.click();
-                    }
+                    window.location.href = 'cards.html';
                     return;
                 }
 
