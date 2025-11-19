@@ -44,6 +44,8 @@
 
       // NEW: which set (if any) is being viewed on the All Cards tab
       let activeSetFilter = null;
+      let editIndex = null; // PRODUCTION: index into cards[] when editing
+      let editSetIndex = null; // Index into userSets[] when editing a set
     </script>
 
     <script src="{{ url_for('static', filename='cards_logic.js') }}"></script> 

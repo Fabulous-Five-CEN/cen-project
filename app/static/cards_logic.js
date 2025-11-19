@@ -9,22 +9,19 @@
     const activeSetLabel     = document.getElementById('activeSetLabel');
     const clearSetFilterBtn  = document.getElementById('clearSetFilter');
 
-    let editIndex = null; // PRODUCTION: index into cards[] when editing
-    let editSetIndex = null; // Index into userSets[] when editing a set
-
     /* =========================================================
      C) SETS HELPERS (PRODUCTION, but counts still TODO)
      ========================================================= */
     // PRODUCTION: read which sets were checked for a card
     function getSelectedSets() {
-      return Array.from(setsEl.options)
+      return Array.from(window.setsEl.options)
       .filter(o => o.selected && o.value)
       .map(o => o.value);
     }
 
     // PRODUCTION: pre-select sets for Edit Card
     function setSelectedSets(values = []) {
-      Array.from(setsEl.options).forEach(o => {
+      Array.from(window.setsEl.options).forEach(o => {
         o.selected = values.includes(o.value);
       });
     }
@@ -34,7 +31,11 @@
     ========================================================= */
 
     function renderCards() {
-      cardsGrid.innerHTML = '';
+      if (!window.cardsGrid) {
+        return;
+      }
+
+      window.cardsGrid.innerHTML = '';
 
       // Start with all cards, but keep their original index
       let list = cards.map((card, idx) => ({ card, idx }));
@@ -127,7 +128,7 @@
 
         wrapper.appendChild(body);
         col.appendChild(wrapper);
-        cardsGrid.appendChild(col);
+        window.cardsGrid.appendChild(col);
       });
     }
 
@@ -142,22 +143,24 @@
 
     const cardModalEl = document.getElementById('cardModal');
 
-    cardModalEl.addEventListener('show.bs.modal', () => {
-      if (editIndex === null) {
-        // New card → clear form
-        const form = document.getElementById('cardForm');
-        form.reset();
-        notesEl.value = '';
-        Array.from(setsEl.options).forEach(o => { o.selected = false; });
-        setsEl.selectedIndex = -1;
-      }
-    });
+    if (cardModalEl) {
+      cardModalEl.addEventListener('show.bs.modal', () => {
+        if (editIndex === null) {
+          // New card → clear form
+          const form = document.getElementById('cardForm');
+          form.reset();
+          window.notesEl.value = '';
+          Array.from(window.setsEl.options).forEach(o => { o.selected = false; });
+          window.setsEl.selectedIndex = -1;
+        }
+      });
 
-    cardModalEl.addEventListener('hidden.bs.modal', () => {
-      // Always clear set selection when modal closes
-      Array.from(setsEl.options).forEach(o => { o.selected = false; });
-      setsEl.selectedIndex = -1;
-    });
+      cardModalEl.addEventListener('hidden.bs.modal', () => {
+        // Always clear set selection when modal closes
+        Array.from(window.setsEl.options).forEach(o => { o.selected = false; });
+        window.setsEl.selectedIndex = -1;
+      });
+    }
 
     // PRODUCTION: create or update a card
     document.getElementById('cardForm').addEventListener('submit', (e) => {
@@ -165,7 +168,7 @@
 
       const es    = document.getElementById('esText').value.trim();
       const en    = document.getElementById('enText').value.trim();
-      const notes = notesEl.value.trim();
+      const notes = window.notesEl.value.trim();
       const sets  = getSelectedSets();
 
       if (!es || !en) return;
@@ -192,38 +195,43 @@
     });
 
     // PRODUCTION: handle Edit/Delete clicks in All Cards grid
-    cardsGrid.addEventListener('click', (e) => {
-      if (e.target.dataset.action === 'deleteCard') {
-        const idx = e.target.closest('[data-index]').dataset.index;
-        cards.splice(idx, 1);
-        localStorage.setItem('cards', JSON.stringify(cards));
-        renderCards();
-      }
+    if (window.cardsGrid) {
+      window.cardsGrid.addEventListener('click', (e) => {
+            if (e.target.dataset.action === 'deleteCard') {
+              const idx = e.target.closest('[data-index]').dataset.index;
+              cards.splice(idx, 1);
+              localStorage.setItem('cards', JSON.stringify(cards));
+              renderCards();
+            }
 
-      if (e.target.dataset.action === 'editCard') {
-        const idx = Number(e.target.closest('[data-index]').dataset.index);
-        editIndex = idx;
+            if (e.target.dataset.action === 'editCard') {
+              const idx = Number(e.target.closest('[data-index]').dataset.index);
+              editIndex = idx;
 
-        // Load card into modal fields
-        document.getElementById('esText').value = cards[idx].es || '';
-        document.getElementById('enText').value = cards[idx].en || '';
-        notesEl.value = cards[idx].notes || '';
-        setSelectedSets(cards[idx].sets || []);
+              // Load card into modal fields
+              document.getElementById('esText').value = cards[idx].es || '';
+              document.getElementById('enText').value = cards[idx].en || '';
+              window.notesEl.value = cards[idx].notes || '';
+              setSelectedSets(cards[idx].sets || []);
 
-        const modal = new bootstrap.Modal(document.getElementById('cardModal'));
-        modal.show();
-      }
-    });
+              const modal = new bootstrap.Modal(document.getElementById('cardModal'));
+              modal.show();
+            }
+          });
+    }
+    
 
     /* =========================================================
     G) SEARCH FILTER (PRODUCTION)
     ========================================================= */
 
     const searchInput = document.getElementById('searchCards');
-    searchInput.addEventListener('input', () => {
-      const term = searchInput.value.toLowerCase();
-      document.querySelectorAll('#cardsGrid .card').forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.parentElement.style.display = text.includes(term) ? '' : 'none';
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const term = searchInput.value.toLowerCase();
+        document.querySelectorAll('#cardsGrid .card').forEach(card => {
+          const text = card.textContent.toLowerCase();
+          card.parentElement.style.display = text.includes(term) ? '' : 'none';
+        });
       });
-    });
+    }

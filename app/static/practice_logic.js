@@ -9,6 +9,11 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     const statusPill       = document.getElementById('statusPill');
     const answerReveal     = document.getElementById('answerReveal');
     const answerRevealText = document.getElementById('answerRevealText');
+    const flipBtn          = document.getElementById('flipBtn');
+    const resetBtn         = document.getElementById('resetBtn');
+    const shuffleBtn       = document.getElementById('shuffleBtn');
+    const nextBtn          = document.getElementById('nextBtn');
+    const prevBtn          = document.getElementById('prevBtn');
     const showAnswerBtn    = document.getElementById('showAnswerBtn');
     const gotItBtn         = document.getElementById('gotItBtn');
     const learningBtn      = document.getElementById('learningBtn');
@@ -20,7 +25,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
 
     // PRODUCTION: build deck from cards[] based on chosen set
     function buildPracticeDeck() {
-      const choice = practiceSetSelect.value;
+      const choice = window.practiceSetSelect.value;
 
       // Add original index so we can key statusByCard
       let all = cards.map((card, idx) => ({ ...card, _idx: idx }));
@@ -92,7 +97,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     }
 
     // PRODUCTION: flip via button
-    document.getElementById('flipBtn').onclick = () => {
+    flipBtn.onclick = () => {
       flipped = !flipped;
       renderPracticeCard();
     };
@@ -104,21 +109,23 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     };
 
     // PRODUCTION: reveal the "start side" text as smaller answer
-    showAnswerBtn.addEventListener('click', () => {
-      if (!practiceDeck.length) return;
+    if (showAnswerBtn) {
+      showAnswerBtn.addEventListener('click', () => {
+        if (!practiceDeck.length) return;
 
-      const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
-      const entry  = practiceDeck[currentIndex];
-      const card   = entry;
+        const sideES = document.querySelector('input[name="startSide"]:checked').value === 'es';
+        const entry  = practiceDeck[currentIndex];
+        const card   = entry;
 
-      // Show the answer text (which is the opposite side from what's shown)
-      answerRevealText.textContent = sideES ? card.en : card.es;
+        // Show the answer text (which is the opposite side from what's shown)
+        answerRevealText.textContent = sideES ? card.en : card.es;
 
-      answerReveal.classList.toggle('open');
-      showAnswerBtn.textContent = answerReveal.classList.contains('open')
-        ? 'Hide Answer'
-        : 'Show Answer';
-    });
+        answerReveal.classList.toggle('open');
+        showAnswerBtn.textContent = answerReveal.classList.contains('open')
+          ? 'Hide Answer'
+          : 'Show Answer';
+      });
+    }
 
     // PRODUCTION: mark card as got it / still learning (in-memory only)
     function setStatus(status) {
@@ -128,28 +135,34 @@ window.practiceSetSelect = document.getElementById('practiceSet');
       renderPracticeCard();
     }
 
-    gotItBtn.addEventListener('click',    () => setStatus('gotit'));
-    learningBtn.addEventListener('click', () => setStatus('learning'));
+    if (gotItBtn)
+      gotItBtn.addEventListener('click',    () => setStatus('gotit'));
+    if (learningBtn)
+      learningBtn.addEventListener('click', () => setStatus('learning'));
 
     // PRODUCTION: next / previous navigation
-    document.getElementById('nextBtn').onclick = () => {
-      if (!practiceDeck.length) return;
-      flipped = false;
-      currentIndex = (currentIndex + 1) % practiceDeck.length;
-      resetAnswerReveal();
-      renderPracticeCard();
-    };
+    if (nextBtn) {
+      nextBtn.onclick = () => {
+        if (!practiceDeck.length) return;
+        flipped = false;
+        currentIndex = (currentIndex + 1) % practiceDeck.length;
+        resetAnswerReveal();
+        renderPracticeCard();
+      };
+    }
 
-    document.getElementById('prevBtn').onclick = () => {
-      if (!practiceDeck.length) return;
-      flipped = false;
-      currentIndex = (currentIndex - 1 + practiceDeck.length) % practiceDeck.length;
-      resetAnswerReveal();
-      renderPracticeCard();
-    };
+    if (prevBtn) {
+      prevBtn.onclick = () => {
+        if (!practiceDeck.length) return;
+        flipped = false;
+        currentIndex = (currentIndex - 1 + practiceDeck.length) % practiceDeck.length;
+        resetAnswerReveal();
+        renderPracticeCard();
+      };
+    }
 
     // PRODUCTION: reset clears progress + statuses
-    document.getElementById('resetBtn').onclick = () => {
+    resetBtn.onclick = () => {
       if (!practiceDeck.length) return;
       currentIndex = 0;
       flipped      = false;
@@ -159,7 +172,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     };
 
     // PRODUCTION: shuffle deck in-place
-    document.getElementById('shuffleBtn').onclick = () => {
+    shuffleBtn.onclick = () => {
       if (!practiceDeck.length) return;
       for (let i = practiceDeck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -251,25 +264,29 @@ window.practiceSetSelect = document.getElementById('practiceSet');
       practiceCardEl.style.transform = "translateX(0)";
     }
 
-    practiceCardEl.addEventListener("mousedown", handleStart);
-    practiceCardEl.addEventListener("mousemove", handleMove);
-    practiceCardEl.addEventListener("mouseup", handleEnd);
-    practiceCardEl.addEventListener("mouseleave", handleEnd);
+    if (praccticeCardEl) {
+      practiceCardEl.addEventListener("mousedown", handleStart);
+      practiceCardEl.addEventListener("mousemove", handleMove);
+      practiceCardEl.addEventListener("mouseup", handleEnd);
+      practiceCardEl.addEventListener("mouseleave", handleEnd);
 
-    practiceCardEl.addEventListener("touchstart", handleStart);
-    practiceCardEl.addEventListener("touchmove", handleMove);
-    practiceCardEl.addEventListener("touchend", handleEnd);
+      practiceCardEl.addEventListener("touchstart", handleStart);
+      practiceCardEl.addEventListener("touchmove", handleMove);
+      practiceCardEl.addEventListener("touchend", handleEnd);
+    }
 
     // CLEAR FILTER: when user clicks "Clear filter", show all cards again
     const clearFilterBtn = document.getElementById('clearSetFilter');
 
-    clearFilterBtn?.addEventListener('click', () => {
-      activeSetFilter = null;   // remove filter
-      renderCards();            // re-render all cards
+    if (clearFilterBtn) {
+      clearFilterBtn?.addEventListener('click', () => {
+        activeSetFilter = null;   // remove filter
+        renderCards();            // re-render all cards
 
-      // Switch back to All Cards tab (optional but nice)
-      const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
-      if (allCardsLink) {
-        allCardsLink.click();
-      }
-    });
+        // Switch back to All Cards tab (optional but nice)
+        const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
+        if (allCardsLink) {
+          allCardsLink.click();
+        }
+      });
+    }

@@ -6,17 +6,21 @@ const userSetsList      = document.getElementById('userSetsList');
             if (!name) return;
 
             // Add to Add-Card modal's select
-            let exists = Array.from(setsEl.options).some(o => o.value === name);
-            if (!exists) {
-                const opt = new Option(name, name);
-                setsEl.appendChild(opt);
+            if (window.setsEl) {
+                let exists = Array.from(window.setsEl.options).some(o => o.value === name);
+                if (!exists) {
+                    const opt = new Option(name, name);
+                    window.setsEl.appendChild(opt);
+                }
             }
 
             // Add to Practice select
-            exists = Array.from(practiceSetSelect.options).some(o => o.value === name);
-            if (!exists) {
-            const opt2 = new Option(name, name);
-                practiceSetSelect.appendChild(opt2);
+            if (window.practiceSetSelect) {
+                let exists = Array.from(window.practiceSetSelect.options).some(o => o.value === name);
+                if (!exists) {
+                    const opt2 = new Option(name, name);
+                    window.practiceSetSelect.appendChild(opt2);
+                }
             }
         }
 
@@ -92,163 +96,169 @@ const userSetsList      = document.getElementById('userSetsList');
         }
 
         // PRODUCTION: Handle clicks on the My Sets list (View + Delete + Edit)
-        userSetsList.addEventListener('click', (e) => {
-            const action = e.target.dataset.action;
-            const name   = e.target.dataset.setName;
-            const index  = e.target.dataset.setIndex;
-            
-            if (!action) return;
-
-            // EDIT: open modal with existing name and description
-            if (action === 'editSet') {
-                editSetIndex = parseInt(index);
-                const setObj = userSets[editSetIndex];
+        if (userSetsList) {
+            userSetsList.addEventListener('click', (e) => {
+                const action = e.target.dataset.action;
+                const name   = e.target.dataset.setName;
+                const index  = e.target.dataset.setIndex;
                 
-                document.getElementById('setName').value = setObj.name;
-                document.getElementById('setDesc').value = setObj.description || '';
-                document.getElementById('setModalTitle').textContent = 'Edit Set';
-                
-                const modalEl = document.getElementById('setEditModal');
-                const modal = new bootstrap.Modal(modalEl);
-                modal.show();
-                return;
-            }
+                if (!action) return;
 
-            // VIEW: jump to All Cards and filter by this set
-            if (action === 'viewSet') {
-                activeSetFilter = name;          // remember which set we're showing
-                renderCards();                   // re-render All Cards using filter
-
-                // switch navbar to "All Cards" tab
-                const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
-                if (allCardsLink) {
-                allCardsLink.click();
-                }
-                return;
-            }
-
-            // DELETE: remove the set everywhere
-            if (action === 'deleteSet') {
-                if (!window.confirm(
-                `Delete set "${name}"? This will remove it from cards but not delete the cards themselves.`
-                )) {
-                return;
+                // EDIT: open modal with existing name and description
+                if (action === 'editSet') {
+                    editSetIndex = parseInt(index);
+                    const setObj = userSets[editSetIndex];
+                    
+                    document.getElementById('setName').value = setObj.name;
+                    document.getElementById('setDesc').value = setObj.description || '';
+                    document.getElementById('setModalTitle').textContent = 'Edit Set';
+                    
+                    const modalEl = document.getElementById('setEditModal');
+                    const modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                    return;
                 }
 
-                // 1) Remove from userSets array + localStorage
-                userSets = userSets.filter(s => s.name !== name);
-                localStorage.setItem('userSets', JSON.stringify(userSets));
+                // VIEW: jump to All Cards and filter by this set
+                if (action === 'viewSet') {
+                    activeSetFilter = name;          // remember which set we're showing
+                    renderCards();                   // re-render All Cards using filter
 
-                // 2) Remove from the "Add to set" dropdown in the Card modal
-                Array.from(setsEl.options).forEach(o => {
-                if (o.value === name) o.remove();
-                });
-
-                // 3) Remove from the Practice set dropdown
-                Array.from(practiceSetSelect.options).forEach(o => {
-                if (o.value === name) o.remove();
-                });
-
-                // 4) Remove this set tag from any cards that used it
-                cards = cards.map(card => {
-                const oldSets = Array.isArray(card.sets) ? card.sets : [];
-                const newSets = oldSets.filter(s => s !== name);
-                return { ...card, sets: newSets };
-                });
-                localStorage.setItem('cards', JSON.stringify(cards));
-
-                // 5) If we were viewing this set, clear the filter
-                if (activeSetFilter === name) {
-                activeSetFilter = null;
+                    // switch navbar to "All Cards" tab
+                    const allCardsLink = document.querySelector('.nav-link[href="#tab-cards"]');
+                    if (allCardsLink) {
+                    allCardsLink.click();
+                    }
+                    return;
                 }
 
-                // 6) Re-render UI
-                renderUserSets();
-                renderCards();
-            }
-        });
+                // DELETE: remove the set everywhere
+                if (action === 'deleteSet') {
+                    if (!window.confirm(
+                    `Delete set "${name}"? This will remove it from cards but not delete the cards themselves.`
+                    )) {
+                    return;
+                    }
+
+                    // 1) Remove from userSets array + localStorage
+                    userSets = userSets.filter(s => s.name !== name);
+                    localStorage.setItem('userSets', JSON.stringify(userSets));
+
+                    // 2) Remove from the "Add to set" dropdown in the Card modal
+                    Array.from(window.setsEl.options).forEach(o => {
+                    if (o.value === name) o.remove();
+                    });
+
+                    // 3) Remove from the Practice set dropdown
+                    Array.from(window.practiceSetSelect.options).forEach(o => {
+                    if (o.value === name) o.remove();
+                    });
+
+                    // 4) Remove this set tag from any cards that used it
+                    cards = cards.map(card => {
+                    const oldSets = Array.isArray(card.sets) ? card.sets : [];
+                    const newSets = oldSets.filter(s => s !== name);
+                    return { ...card, sets: newSets };
+                    });
+                    localStorage.setItem('cards', JSON.stringify(cards));
+
+                    // 5) If we were viewing this set, clear the filter
+                    if (activeSetFilter === name) {
+                    activeSetFilter = null;
+                    }
+
+                    // 6) Re-render UI
+                    renderUserSets();
+                    renderCards();
+                }
+            });
+        }
+
+        const setForm = document.getElementById('setForm')
         
         // PRODUCTION: handle New Set form submit (creates real set names)
-        document.getElementById('setForm').addEventListener('submit', (e) => {
-            e.preventDefault();
+        if (setForm) {
+            setForm.addEventListener('submit', (e) => {
+                e.preventDefault();
 
-            const nameInput = document.getElementById('setName');
-            const descInput = document.getElementById('setDesc');
+                const nameInput = document.getElementById('setName');
+                const descInput = document.getElementById('setDesc');
 
-            const name = nameInput.value.trim();
-            const description = descInput.value.trim();
-            
-            if (!name) return;
-
-            if (editSetIndex !== null) {
-            // EDITING existing set
-            const oldName = userSets[editSetIndex].name;
-            
-            // Update the set object
-            userSets[editSetIndex] = { name, description };
-            localStorage.setItem('userSets', JSON.stringify(userSets));
-            
-            // If name changed, update it everywhere
-            if (oldName !== name) {
-                // Update in card modal dropdown
-                Array.from(setsEl.options).forEach(o => {
-                if (o.value === oldName) {
-                    o.value = name;
-                    o.text = name;
-                }
-                });
+                const name = nameInput.value.trim();
+                const description = descInput.value.trim();
                 
-                // Update in practice dropdown
-                Array.from(practiceSetSelect.options).forEach(o => {
-                if (o.value === oldName) {
-                    o.value = name;
-                    o.text = name;
-                }
-                });
-                
-                // Update in all cards that reference this set
-                cards = cards.map(card => {
-                if (Array.isArray(card.sets)) {
-                    return {
-                    ...card,
-                    sets: card.sets.map(s => s === oldName ? name : s)
-                    };
-                }
-                return card;
-                });
-                localStorage.setItem('cards', JSON.stringify(cards));
-                
-                // Update active filter if it was showing this set
-                if (activeSetFilter === oldName) {
-                activeSetFilter = name;
-                }
-            }
-            
-            editSetIndex = null;
-            renderUserSets();
-            renderCards();
-            
-            } else {
-            // CREATING new set
-            // 1) Add to selects so you can assign cards to this set
-            addSetOption({ name, description });
+                if (!name) return;
 
-            // 2) Persist the set
-            if (!userSets.some(s => s.name === name)) {
-                userSets.push({ name, description });
+                if (editSetIndex !== null) {
+                // EDITING existing set
+                const oldName = userSets[editSetIndex].name;
+                
+                // Update the set object
+                userSets[editSetIndex] = { name, description };
                 localStorage.setItem('userSets', JSON.stringify(userSets));
-                renderUserSets(); // re-render My Sets list
-            }
-            }
+                
+                // If name changed, update it everywhere
+                if (oldName !== name) {
+                    // Update in card modal dropdown
+                    Array.from(window.setsEl.options).forEach(o => {
+                    if (o.value === oldName) {
+                        o.value = name;
+                        o.text = name;
+                    }
+                    });
+                    
+                    // Update in practice dropdown
+                    Array.from(window.practiceSetSelect.options).forEach(o => {
+                    if (o.value === oldName) {
+                        o.value = name;
+                        o.text = name;
+                    }
+                    });
+                    
+                    // Update in all cards that reference this set
+                    cards = cards.map(card => {
+                    if (Array.isArray(card.sets)) {
+                        return {
+                        ...card,
+                        sets: card.sets.map(s => s === oldName ? name : s)
+                        };
+                    }
+                    return card;
+                    });
+                    localStorage.setItem('cards', JSON.stringify(cards));
+                    
+                    // Update active filter if it was showing this set
+                    if (activeSetFilter === oldName) {
+                    activeSetFilter = name;
+                    }
+                }
+                
+                editSetIndex = null;
+                renderUserSets();
+                renderCards();
+                
+                } else {
+                // CREATING new set
+                // 1) Add to selects so you can assign cards to this set
+                addSetOption({ name, description });
 
-            // 3) Clear + close modal
-            nameInput.value = '';
-            descInput.value = '';
+                // 2) Persist the set
+                if (!userSets.some(s => s.name === name)) {
+                    userSets.push({ name, description });
+                    localStorage.setItem('userSets', JSON.stringify(userSets));
+                    renderUserSets(); // re-render My Sets list
+                }
+                }
 
-            const modalEl = document.getElementById('setEditModal');
-            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-            modal.hide();
-        });
+                // 3) Clear + close modal
+                nameInput.value = '';
+                descInput.value = '';
+
+                const modalEl = document.getElementById('setEditModal');
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            });
+        }
 
         // When opening set modal via "New Set +" button, clear editSetIndex
         document.querySelectorAll('[data-bs-target="#setEditModal"]').forEach(btn => {
