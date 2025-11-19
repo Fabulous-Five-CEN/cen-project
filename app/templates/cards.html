@@ -105,7 +105,7 @@
 
     // Load saved cards from localStorage (persistent per browser)
     // If nothing stored yet, use an empty array
-    let cards = JSON.parse(localStorage.getItem('cards')) || [];
+    let cards = JSON.parse(localStorage.getItem('cards') || '[]');
 
     // When not null, we are editing the card at this index
     let editIndex = null;
