@@ -166,27 +166,31 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     }
 
     // PRODUCTION: reset clears progress + statuses
-    resetBtn.onclick = () => {
-      if (!practiceDeck.length) return;
-      currentIndex = 0;
-      flipped      = false;
-      Object.keys(statusByCard).forEach(k => delete statusByCard[k]); // clear Got it / Still learning
-      resetAnswerReveal();
-      renderPracticeCard();
-    };
+    if (resetBtn) {
+      resetBtn.onclick = () => {
+        if (!practiceDeck.length) return;
+        currentIndex = 0;
+        flipped      = false;
+        Object.keys(statusByCard).forEach(k => delete statusByCard[k]); // clear Got it / Still learning
+        resetAnswerReveal();
+        renderPracticeCard();
+      };
+    }
 
     // PRODUCTION: shuffle deck in-place
-    shuffleBtn.onclick = () => {
-      if (!practiceDeck.length) return;
-      for (let i = practiceDeck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [practiceDeck[i], practiceDeck[j]] = [practiceDeck[j], practiceDeck[i]];
-      }
-      currentIndex = 0;
-      flipped = false;
-      resetAnswerReveal();
-      renderPracticeCard();
-    };
+    if (shuffleBtn) {
+      shuffleBtn.onclick = () => {
+        if (!practiceDeck.length) return;
+        for (let i = practiceDeck.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [practiceDeck[i], practiceDeck[j]] = [practiceDeck[j], practiceDeck[i]];
+        }
+        currentIndex = 0;
+        flipped = false;
+        resetAnswerReveal();
+        renderPracticeCard();
+      };
+    }
 
     // PRODUCTION: switching start side re-renders card
     document.querySelectorAll('input[name="startSide"]').forEach(r => {
