@@ -105,10 +105,12 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     }
 
     // PRODUCTION: flip by clicking card
-    practiceCardEl.onclick = () => {
-      flipped = !flipped;
-      renderPracticeCard();
-    };
+    if (practiceCardEl) {
+      practiceCardEl.onclick = () => {
+        flipped = !flipped;
+        renderPracticeCard();
+      };
+    }
 
     // PRODUCTION: reveal the "start side" text as smaller answer
     if (showAnswerBtn) {
