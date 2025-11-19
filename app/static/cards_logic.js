@@ -137,7 +137,9 @@
     ========================================================= */
 
     // When you open the card modal from any "+ Add Card" button, treat it as "new card"
-    document.querySelectorAll('[data-bs-target="#cardModal"]').forEach(btn => {
+    const cardModalTrigger = document.querySelectorAll('[data-bs-target="#setEditModal"]');
+    
+    cardModalTrigger.forEach(btn => {
       btn.addEventListener('click', () => { editIndex = null; });
     });
 

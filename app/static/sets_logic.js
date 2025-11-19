@@ -261,7 +261,9 @@ const userSetsList      = document.getElementById('userSetsList');
         }
 
         // When opening set modal via "New Set +" button, clear editSetIndex
-        document.querySelectorAll('[data-bs-target="#setEditModal"]').forEach(btn => {
+        const setModalTrigger = document.querySelectorAll('[data-bs-target="#setEditModal"]');
+        
+        setModalTrigger.forEach(btn => {
             btn.addEventListener('click', () => {
             editSetIndex = null;
             document.getElementById('setName').value = '';

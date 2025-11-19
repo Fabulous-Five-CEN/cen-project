@@ -193,7 +193,9 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     }
 
     // PRODUCTION: switching start side re-renders card
-    document.querySelectorAll('input[name="startSide"]').forEach(r => {
+    const switchRenderTrigger = document.querySelectorAll('input[name="startSide"]');
+    
+    switchRenderTrigger.forEach(r => {
       r.addEventListener('change', () => {
         flipped = false;
         resetAnswerReveal();
@@ -202,11 +204,14 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     });
 
     // PRODUCTION: when Practice modal is triggered, build deck from real cards
-    document.querySelector('[data-bs-target="#practiceModal"]')
-      .addEventListener('click', () => {
+    const practiceModalTrigger = document.querySelector('[data-bs-target="#practiceModal"]');
+
+    if (practiceModalTrigger) {
+      practiceModalTrigger.addEventListener('click', () => {
         buildPracticeDeck();
         renderPracticeCard();
       });
+    }
 
     /* =========================================================
      I) SWIPE HANDLING (PRODUCTION, but optional UX)
