@@ -131,10 +131,8 @@ const userSetsList      = document.getElementById('userSetsList');
 
                 // DELETE: remove the set everywhere
                 if (action === 'deleteSet') {
-                    if (!window.confirm(
-                    `Delete set "${name}"? This will remove it from cards but not delete the cards themselves.`
-                    )) {
-                    return;
+                    if (!window.confirm(`Delete set "${name}"? This will remove it from cards but not delete the cards themselves.`)) {
+                        return;
                     }
 
                     // 1) Remove from userSets array + localStorage
@@ -142,15 +140,19 @@ const userSetsList      = document.getElementById('userSetsList');
                     localStorage.setItem('userSets', JSON.stringify(userSets));
 
                     // 2) Remove from the "Add to set" dropdown in the Card modal
-                    Array.from(window.setsEl.options).forEach(o => {
-                    if (o.value === name) o.remove();
-                    });
+                    if (window.setsEl) {
+                        Array.from(window.setsEl.options).forEach(o => {
+                            if (o.value === name) o.remove();
+                        });
+                    }
 
                     // 3) Remove from the Practice set dropdown
-                    Array.from(window.practiceSetSelect.options).forEach(o => {
-                    if (o.value === name) o.remove();
-                    });
-
+                    if (window.practiceSetSelect) {
+                        Array.from(window.practiceSetSelect.options).forEach(o => {
+                            if (o.value === name) o.remove();
+                        });
+                    }
+                    
                     // 4) Remove this set tag from any cards that used it
                     cards = cards.map(card => {
                     const oldSets = Array.isArray(card.sets) ? card.sets : [];
@@ -197,20 +199,24 @@ const userSetsList      = document.getElementById('userSetsList');
                 // If name changed, update it everywhere
                 if (oldName !== name) {
                     // Update in card modal dropdown
-                    Array.from(window.setsEl.options).forEach(o => {
-                    if (o.value === oldName) {
-                        o.value = name;
-                        o.text = name;
+                    if (window.setsEl) {
+                        Array.from(window.setsEl.options).forEach(o => {
+                            if (o.value === oldName) {
+                                o.value = name;
+                                o.text = name;
+                            }
+                        });
                     }
-                    });
                     
                     // Update in practice dropdown
-                    Array.from(window.practiceSetSelect.options).forEach(o => {
-                    if (o.value === oldName) {
-                        o.value = name;
-                        o.text = name;
+                    if (window.practiceSetSelect) {
+                        Array.from(window.practiceSetSelect.options).forEach(o => {
+                            if (o.value === oldName) {
+                                o.value = name;
+                                o.text = name;
+                            }
+                        });
                     }
-                    });
                     
                     // Update in all cards that reference this set
                     cards = cards.map(card => {
