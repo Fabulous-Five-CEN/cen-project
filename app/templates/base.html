@@ -47,6 +47,35 @@
       localStorage.removeItem('activeSetFilter');
       let editIndex = null; // PRODUCTION: index into cards[] when editing
       let editSetIndex = null; // Index into userSets[] when editing a set
+
+      document.addEventListener('DOMContentLoaded', () => {
+        // Get the current path (e.g., '/cards', '/sets', '/')
+        const currentPath = window.location.pathname;
+
+        // Determine which link to activate based on the path
+        let activeLinkId = '';
+
+        if (currentPath.includes('/cards')) {
+            activeLinkId = 'nav-cards-link';
+        } else if (currentPath.includes('/sets')) {
+            activeLinkId = 'nav-sets-link';
+        } else if (currentPath.includes('/practice')) {
+            activeLinkId = 'nav-practice-link';
+        } else if (currentPath.includes('/auth/account')) {
+            activeLinkId = 'nav-account-link';
+        } else {
+            activeLinkId = 'nav-dash-link';
+        }
+
+        // Apply the active styling
+        if (activeLinkId && activeLinkId != 'nav-dash-link') {
+            const activeLink = document.getElementById(activeLinkId);
+            if (activeLink) {
+                // Bootstrap's 'active' class usually handles the styling.
+                activeLink.classList.add('active', 'text-white'); 
+            }
+        }
+      });
     </script>
 
     <script src="{{ url_for('static', filename='cards_logic.js') }}"></script> 
