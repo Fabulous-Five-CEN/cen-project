@@ -194,7 +194,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
 
     // PRODUCTION: switching start side re-renders card
     const switchRenderTrigger = document.querySelectorAll('input[name="startSide"]');
-    
+
     switchRenderTrigger.forEach(r => {
       r.addEventListener('change', () => {
         flipped = false;
@@ -277,7 +277,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
       practiceCardEl.style.transform = "translateX(0)";
     }
 
-    if (praccticeCardEl) {
+    if (practiceCardEl) {
       practiceCardEl.addEventListener("mousedown", handleStart);
       practiceCardEl.addEventListener("mousemove", handleMove);
       practiceCardEl.addEventListener("mouseup", handleEnd);
