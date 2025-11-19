@@ -97,10 +97,12 @@ window.practiceSetSelect = document.getElementById('practiceSet');
     }
 
     // PRODUCTION: flip via button
-    flipBtn.onclick = () => {
-      flipped = !flipped;
-      renderPracticeCard();
-    };
+    if (flipBtn) {
+      flipBtn.onclick = () => {
+        flipped = !flipped;
+        renderPracticeCard();
+      };
+    }
 
     // PRODUCTION: flip by clicking card
     practiceCardEl.onclick = () => {

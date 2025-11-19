@@ -162,37 +162,41 @@
       });
     }
 
+    const cardForm = document.getElementById('cardForm');
+
     // PRODUCTION: create or update a card
-    document.getElementById('cardForm').addEventListener('submit', (e) => {
-      e.preventDefault();
+    if (cardForm) {
+      cardForm.addEventListener('submit', (e) => {
+        e.preventDefault();
 
-      const es    = document.getElementById('esText').value.trim();
-      const en    = document.getElementById('enText').value.trim();
-      const notes = window.notesEl.value.trim();
-      const sets  = getSelectedSets();
+        const es    = document.getElementById('esText').value.trim();
+        const en    = document.getElementById('enText').value.trim();
+        const notes = window.notesEl.value.trim();
+        const sets  = getSelectedSets();
 
-      if (!es || !en) return;
+        if (!es || !en) return;
 
-      if (editIndex !== null) {
-        // Update existing card
-        cards[editIndex] = { ...cards[editIndex], es, en, notes, sets };
-        editIndex = null;
-      } else {
-        // New card at top
-        cards.unshift({ es, en, notes, sets });
-      }
+        if (editIndex !== null) {
+          // Update existing card
+          cards[editIndex] = { ...cards[editIndex], es, en, notes, sets };
+          editIndex = null;
+        } else {
+          // New card at top
+          cards.unshift({ es, en, notes, sets });
+        }
 
-      localStorage.setItem('cards', JSON.stringify(cards));
-      renderCards();
+        localStorage.setItem('cards', JSON.stringify(cards));
+        renderCards();
 
-      const m = document.getElementById('cardModal');
-      (bootstrap.Modal.getInstance(m) || new bootstrap.Modal(m)).hide();
+        const m = document.getElementById('cardModal');
+        (bootstrap.Modal.getInstance(m) || new bootstrap.Modal(m)).hide();
 
-      new bootstrap.Toast(document.getElementById('appToast')).show();
+        new bootstrap.Toast(document.getElementById('appToast')).show();
 
-      e.target.reset();
-      setSelectedSets([]);
-    });
+        e.target.reset();
+        setSelectedSets([]);
+      });
+    }
 
     // PRODUCTION: handle Edit/Delete clicks in All Cards grid
     if (window.cardsGrid) {
