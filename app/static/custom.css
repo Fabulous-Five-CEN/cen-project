@@ -1,0 +1,110 @@
+/* PRODUCTION: answer slide-up animation used in live Practice modal */
+    .answer-reveal {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .3s ease;
+    }
+
+    .answer-reveal.open {
+      max-height: 200px; /* enough space for English text */
+    }
+
+    /* PRODUCTION: swipe animation for practice card */
+    .practice-card-shell {
+      overflow: hidden;
+      position: relative;
+    }
+
+    #practiceCard {
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      cursor: grab;
+    }
+
+    #practiceCard:active {
+      cursor: grabbing;
+    }
+
+    /* PRODUCTION: main visual style for practice card */
+    .practice-card-shell {
+      border-radius: 1.25rem;
+      background: #ffffff;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.18);
+      transition: box-shadow .2s ease, transform .2s ease;
+    }
+
+    .practice-card-shell:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.22);
+    }
+
+    /* PRODUCTION: generic card styling (used on All Cards + My Sets) */
+    .accordion-item {
+      border-radius: 0.75rem !important;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      margin-bottom: 0.75rem;
+      border: none;
+    }
+
+    .section-title {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .section-subtitle {
+      color: #6b7280; /* slate-ish grey */
+      font-size: 0.9rem;
+    }
+
+    /* PRODUCTION: page chrome */
+    body {
+      background-color: #f7f7fb;   /* soft gray background */
+    }
+
+    .navbar {
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1);
+    }
+
+    /* PRODUCTION: the flashcard "tile" style in All Cards + My Sets */
+    .card {
+      border-radius: 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.16);
+    }
+
+    /* PRODUCTION: card flip logic for Practice modal */
+    .card-face { transition: transform .3s; transform-style: preserve-3d; }
+    .flipped .front { transform: rotateY(180deg); }
+    .flipped .back { transform: rotateY(0deg); }
+    .front, .back { backface-visibility:hidden; }
+    .back { transform: rotateY(180deg); position:absolute; inset:0; }
+
+    /* PRODUCTION: floating "+" button */
+    .fab { position: fixed; right: 24px; bottom: 24px; z-index:1030; }
+
+    /* PRODUCTION: Safari multiple-select fix for Add-to-Set select */
+    #cardSets option[disabled][hidden],
+    #cardSets option[value=""] {
+      display: none !important;
+    }
+    
+    #cardSets:focus option:first-child {
+      background-color: transparent !important;
+    }
+
+    /* PRODUCTION: search bar styling */
+    #searchCards {
+      border-radius: 999px;
+      padding-inline: 1.25rem;
+    }
+
+    #searchCards::placeholder {
+      color: #9ca3af;
+    }
