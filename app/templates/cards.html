@@ -4,29 +4,29 @@
 
 <!-- ========== All Cards (PRODUCTION) ========== -->
 <main id="cards-page" class="container py-4 flex-grow-1">
-  <div class="d-flex gap-2 justify-content-between mb-2">
+  <div class="d-flex justify-content-between align-items-center mb-2">
     <div>
       <h4 class="section-title mb-0">All Cards</h4>
       <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
     </div>
+  </div>
 
-    <div class="d-flex gap-2 align-items-center mb-3">
-      <!-- PRODUCTION: live search filter -->
-      <input id="searchCards" class="form-control" placeholder="Search cards…">
-      <!-- PRODUCTION: opens real Add/Edit card modal -->
-      <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
-        Add Card +
-      </button>
-    </div>
+  <div class="d-flex gap-2 align-items-center mb-3">
+    <!-- PRODUCTION: live search filter -->
+    <input id="searchCards" class="form-control" placeholder="Search cards…">
+    <!-- PRODUCTION: opens real Add/Edit card modal -->
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
+      Add Card +
+    </button>
+  </div>
 
-    <div id="activeSetIndicator" class="alert alert-secondary py-1 px-2 d-inline-flex align-items-center small d-none mb-3">
-      <span id="activeSetLabel" class="me-2"></span>
-      <button id="clearSetFilter"
-        type="button"
-        class="btn btn-sm btn-outline-secondary">
-        Clear filter
-      </button>
-    </div>
+  <div id="activeSetIndicator" class="alert alert-secondary py-1 px-2 d-inline-flex align-items-center small d-none mb-3">
+    <span id="activeSetLabel" class="me-2"></span>
+    <button id="clearSetFilter"
+      type="button"
+      class="btn btn-sm btn-outline-secondary">
+      Clear filter
+    </button>
   </div>
 
   <!-- PRODUCTION: populated from localStorage "cards" -->
