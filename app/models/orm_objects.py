@@ -1,9 +1,12 @@
 from datetime import datetime
 
+from flask_login import UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
+
 from app.extensions import db
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "User"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -36,6 +39,14 @@ class User(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, candidate: str) -> bool:
+        if not candidate:
+            return False
+        return check_password_hash(self.password_hash, candidate)
 
 
 class Card(db.Model):
