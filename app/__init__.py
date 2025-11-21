@@ -1,6 +1,7 @@
 from flask import Flask
-from .extensions import db
+from .extensions import db, login_manager
 from .models import orm_objects
+from .models.orm_objects import User
 
 # Import blueprints
 from .main import main_bp
@@ -22,6 +23,8 @@ def create_app(config_override=None):
 
     # Initialize extensions
     db.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
 
     # Auto update changes
     app.config.setdefault("TEMPLATES_AUTO_RELOAD", True)
@@ -35,3 +38,10 @@ def create_app(config_override=None):
     app.register_blueprint(practice_bp, url_prefix="/practice")
 
     return app
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    if not user_id:
+        return None
+    return db.session.get(User, int(user_id))
