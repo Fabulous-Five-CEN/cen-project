@@ -1,4 +1,4 @@
-from flask import jsonify, render_template, request
+from flask import jsonify, render_template, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app.models import User
@@ -17,7 +17,7 @@ def _serialize_user(user: User):
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return jsonify({"page": "Login"})
+        return render_template("account.html")
 
     data = request.get_json() or {}
     email = data.get("email")
@@ -31,8 +31,9 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
     login_user(user)
-    return jsonify({"message": "Login successful", "user": _serialize_user(user)}), 200
 
+    flash("Successful login!", "success")
+    return jsonify({"redirect" : "/"})
 
 @auth_bp.route("/logout", methods=["POST"])
 @login_required
