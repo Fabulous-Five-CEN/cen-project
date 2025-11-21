@@ -1,4 +1,5 @@
 from flask import jsonify, request, render_template
+from flask_login import current_user, login_required
 import requests
 from . import cards_bp
 from app import db
@@ -14,8 +15,31 @@ LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 
 @cards_bp.route("/")
 def cards_home():
-    return render_template("cards.html")
+    user_id = None
+    if current_user:
+         user_id = current_user.id
 
+    # retrieve all cards for user, pass in jinja html, render on frontend
+    cards = db.session.query(Card).filter_by(user_id=user_id).order_by(Card.created_at.desc()).all()
+    cards_data = [
+        {
+            "id": card.id,
+            "english_text": card.english_text,
+            "spanish_text": card.spanish_text,
+            "notes": card.notes,
+            "is_starred": card.is_starred,
+            "created_at": card.created_at.isoformat(),
+            "updated_at": card.updated_at.isoformat(),
+            # don't include sets for now
+        }
+        for card in cards
+    ]
+
+    return render_template("cards.html", cards=cards_data)
+
+         
+
+@login_required
 @cards_bp.route("/new", methods=["POST"])
 def new_card():
     data = request.get_json() or {}
@@ -23,7 +47,7 @@ def new_card():
     # Mandatory Fields
     english_text = data.get('english_text')
     spanish_text = data.get('spanish_text')
-    user_id = data.get('user_id')
+    user_id = current_user.id
 
     # Optional
 
@@ -70,9 +94,14 @@ def new_card():
         }
     }), 201
 
-
+@login_required
 @cards_bp.route("/edit/<int:card_id>", methods = ["PUT"])
 def edit_card(card_id):
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+    
 
     data = request.get_json() or {}
 
@@ -115,9 +144,15 @@ def edit_card(card_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to update card: {str(e)}"}), 500
     
-
+@login_required
 @cards_bp.route("/delete/<int:card_id>", methods = ["DELETE"])
 def delete_card(card_id):
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+    
     card = db.session.get(Card, card_id)
     if not card:
         return jsonify({"error": f"No card found with id {card_id}"}), 404
@@ -131,12 +166,17 @@ def delete_card(card_id):
         return jsonify({"error": f"Failed to delete card: {str(e)}"}), 500
 
 
-
+@login_required
 @cards_bp.route("/auto-translate", methods=["POST"]) 
 def auto_translate():
     data = request.get_json() or {}
     text = data.get('text')
     direction = data.get('direction')
+    user_id = current_user.id
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
 
     if not text or direction not in ['english_to_spanish', 'spanish_to_english']:
             return jsonify({"error" : "Invalid request"}), 400
