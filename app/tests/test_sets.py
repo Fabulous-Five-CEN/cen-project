@@ -25,11 +25,19 @@ class SetRouteTests(unittest.TestCase):
 
         self.user = User(
             email="sets@test.com",
-            password_hash="hashed",
             display_name="Set User",
         )
+        # password for test
+        self.user.set_password("testpassword")
         db.session.add(self.user)
         db.session.commit()
+
+        # login so protected /sets endpoints work in tests
+        login_resp = self.client.post(
+            "/auth/login", json={"email": self.user.email, "password": "testpassword"}
+        )
+        # login should succeed and return JSON redirect
+        self.assertEqual(login_resp.status_code, 200)
 
     def tearDown(self):
         db.session.remove()

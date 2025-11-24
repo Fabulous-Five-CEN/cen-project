@@ -3,6 +3,7 @@ from . import sets_bp
 from app.extensions import db
 from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
+from flask_login import login_required, current_user
 
 @sets_bp.route("/")
 def sets_home():
@@ -29,10 +30,15 @@ def get_set_or_404(set_id, description=None):
 
 @sets_bp.route("/all", methods=["GET"])
 def get_all_sets():
-    """Gets all sets associated with a specific user_id."""
+    """Gets all sets associated with a specific user_id.
+
+    """
     user_id = request.args.get('user_id', type=int)
     if not user_id:
-        return jsonify({"error": "user_id query parameter is required"}), 400
+        if current_user and getattr(current_user, "is_authenticated", False):
+            user_id = current_user.id
+        else:
+            return jsonify({"error": "user_id query parameter is required"}), 400
 
     user = db.session.get(User, user_id)
     if not user:
@@ -55,14 +61,17 @@ def get_set_details(set_id):
     return jsonify(set_data), 200
 
 @sets_bp.route("/new", methods=["POST"])
+@login_required
 def new_set():
     data = request.get_json() or {}
     name = data.get("name")
     description = data.get("description")
-    user_id = data.get("user_id")
 
-    if not name or not user_id:
-        return jsonify({"error": "Missing one of these required fields: name, user_id"}), 400
+    # Authenticated user is the owner of the set
+    user_id = current_user.id
+
+    if not name:
+        return jsonify({"error": "Missing required field: name"}), 400
 
     user = db.session.get(User, user_id)
     if not user:
@@ -85,9 +94,14 @@ def new_set():
         return jsonify({"error": f"Failed to create set: {str(e)}"}), 500
 
 @sets_bp.route("/edit/<int:set_id>", methods=["PUT"])
+@login_required
 def edit_set(set_id):
     data = request.get_json() or {}
     set_obj = get_set_or_404(set_id)
+
+    # Only the owner can edit the set
+    if set_obj.user_id != current_user.id:
+        return jsonify({"error": "Forbidden: you do not own this set"}), 403
 
     name = data.get("name")
     description = data.get("description")
@@ -109,8 +123,13 @@ def edit_set(set_id):
         return jsonify({"error": f"Failed to update set: {str(e)}"}), 500
 
 @sets_bp.route("/delete/<int:set_id>", methods=["DELETE"])
+@login_required
 def delete_set(set_id):
     set_obj = get_set_or_404(set_id)
+
+    # Only the owner can delete the set
+    if set_obj.user_id != current_user.id:
+        return jsonify({"error": "Forbidden: you do not own this set"}), 403
     try:
         db.session.delete(set_obj)
         db.session.commit()
@@ -120,6 +139,7 @@ def delete_set(set_id):
         return jsonify({"error": f"Failed to delete set: {str(e)}"}), 500
 
 @sets_bp.route("/add_card/<int:set_id>", methods=["POST"])
+@login_required
 def add_card_to_set(set_id):
     data = request.get_json() or {}
     card_ids = data.get("card_ids")
@@ -128,6 +148,10 @@ def add_card_to_set(set_id):
 
     set_obj = get_set_or_404(set_id)
     
+    # Only owner may modify the set
+    if set_obj.user_id != current_user.id:
+        return jsonify({"error": "Forbidden: you do not own this set"}), 403
+
     if isinstance(card_ids, int):
         card_ids = [card_ids]
 
@@ -151,6 +175,7 @@ def add_card_to_set(set_id):
         return jsonify({"error": f"Failed to add cards to set: {str(e)}"}), 500
 
 @sets_bp.route("/delete_card/<int:set_id>", methods=["POST"])
+@login_required
 def delete_card_from_set(set_id):
     data = request.get_json() or {}
     card_id = data.get("card_id")
@@ -158,6 +183,9 @@ def delete_card_from_set(set_id):
         return jsonify({"error": "Missing required field: card_id"}), 400
 
     set_obj = get_set_or_404(set_id)
+    # Only owner may modify the set
+    if set_obj.user_id != current_user.id:
+        return jsonify({"error": "Forbidden: you do not own this set"}), 403
     card = db.session.get(Card, card_id)
 
     if not card or card not in set_obj.cards:
