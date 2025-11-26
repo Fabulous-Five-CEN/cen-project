@@ -12,7 +12,7 @@ RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")
 LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 
 
-
+@login_required
 @cards_bp.route("/")
 def cards_home():
     user_id = None

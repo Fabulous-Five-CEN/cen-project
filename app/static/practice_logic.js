@@ -1,5 +1,9 @@
 window.practiceSetSelect = document.getElementById('practiceSet');
 
+  // Global: cards loaded from backend before practice begins
+
+
+
     /* =========================================================
     F) PRACTICE LOGIC (PRODUCTION, uses real cards/sets)
     ========================================================= */
@@ -31,8 +35,9 @@ window.practiceSetSelect = document.getElementById('practiceSet');
       let all = cards.map((card, idx) => ({ ...card, _idx: idx }));
 
       if (choice !== 'all') {
-        all = all.filter(c => Array.isArray(c.sets) && c.sets.includes(choice));
-      }
+        const choiceNum = parseInt(choice, 10); 
+        all = all.filter(c => Array.isArray(c.sets) && c.sets.includes(choiceNum));
+      } 
 
       practiceDeck = all;
       currentIndex = 0;
@@ -202,16 +207,54 @@ window.practiceSetSelect = document.getElementById('practiceSet');
         renderPracticeCard();
       });
     });
+    // start practice mode, fetch cards from backend
+    const startPracticeBtn = document.getElementById("startPracticeBtn");
 
-    // PRODUCTION: when Practice modal is triggered, build deck from real cards
-    const practiceModalTrigger = document.querySelector('[data-bs-target="#practiceModal"]');
+    if (startPracticeBtn) {
+      startPracticeBtn.addEventListener("click", async () => {
+        const choice = window.practiceSetSelect.value;
+        const url = choice === "all" ? "/practice/set" : `/practice/set/${choice}`;
 
-    if (practiceModalTrigger) {
-      practiceModalTrigger.addEventListener('click', () => {
-        buildPracticeDeck();
-        renderPracticeCard();
+        try {
+          const res = await fetch(url, { credentials: "same-origin" });
+          if (!res.ok) {
+            console.error("Practice set fetch failed", res.status, await res.text());
+            return;
+          }
+
+          const data = await res.json();
+
+          // map serialized fields
+          cards = data.map(c => ({
+            id: c.id,
+            es: c.spanish_text,
+            en: c.english_text,
+            notes: c.notes,
+            is_starred: c.is_starred,
+            sets: c.set_ids
+          }));
+
+          // build and render
+          buildPracticeDeck();
+          renderPracticeCard();
+
+          // render modal
+          const modalEl = document.getElementById("practiceModal");
+          if (typeof bootstrap !== "undefined" && modalEl) {
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+          } else {
+            // else handle
+            modalEl.classList.add("show");
+            modalEl.style.display = "block";
+          }
+        } catch (err) {
+          console.error("Failed to load practice set:", err);
+        }
       });
     }
+
+
 
     /* =========================================================
      I) SWIPE HANDLING (PRODUCTION, but optional UX)
