@@ -33,20 +33,6 @@
         or MVP that runs entirely in the browser.
       ========================================================= */
 
-      let cards = JSON.parse(localStorage.getItem('cards') || '[]');        // PRODUCTION: actual flashcards
-      let userSets = JSON.parse(localStorage.getItem('userSets') || '[]');  // PRODUCTION: set objects with name and description
-
-      // Migration: convert old string-based sets to objects
-      if (userSets.length > 0 && typeof userSets[0] === 'string') {
-        userSets = userSets.map(name => ({ name, description: '' }));
-        localStorage.setItem('userSets', JSON.stringify(userSets));
-      }
-
-      // NEW: which set (if any) is being viewed on the All Cards tab
-      let activeSetFilter = localStorage.getItem('activeSetFilter');
-      localStorage.removeItem('activeSetFilter');
-      let editIndex = null; // PRODUCTION: index into cards[] when editing
-      let editSetIndex = null; // Index into userSets[] when editing a set
 
       document.addEventListener('DOMContentLoaded', () => {
         // Get the current path (e.g., '/cards', '/sets', '/')
