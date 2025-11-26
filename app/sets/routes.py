@@ -3,6 +3,7 @@ from . import sets_bp
 from app.extensions import db
 from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
+from flask_login import login_required, current_user
 
 @sets_bp.route("/")
 def sets_home():

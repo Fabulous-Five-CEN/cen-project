@@ -31,7 +31,9 @@
 
     <div class="col-md-3 text-md-end">
       <!-- PRODUCTION: opens real practice modal, using the cards you created -->
-      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#practiceModal">Start Practice</button>
+      <button class="btn btn-primary" id="startPracticeBtn">
+        Start Practice
+      </button>
     </div>
   </div>
     
@@ -90,4 +92,30 @@
     </div>
   </div>
 </main>
+
+<script id="sets-data" type="application/json">
+    {{ sets | tojson | safe }}
+</script>
+
+<script>
+// Get sets from jinja
+let sets = JSON.parse(document.getElementById('sets-data').textContent);
+
+// catch dropdown
+const practiceSetSelect = document.getElementById("practiceSet");
+
+// populate w sets
+function populateSetDropdown() {
+    sets.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.id;      // bcakend id for ref
+        opt.textContent = s.name; // dispolay name
+        practiceSetSelect.appendChild(opt);
+    });
+}
+
+// execute on dom load
+populateSetDropdown();
+</script>
+
 {% endblock %}

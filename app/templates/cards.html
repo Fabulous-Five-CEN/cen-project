@@ -1,8 +1,6 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
-<!-- ========== All Cards (PRODUCTION) ========== -->
 <main id="cards-page" class="container py-4 flex-grow-1">
   <div class="d-flex justify-content-between align-items-center mb-2">
     <div>
@@ -10,64 +8,75 @@
       <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
     </div>
   </div>
+  
+    <div class="d-flex gap-2 align-items-center mb-3">
+        <input id="searchCards" class="form-control" placeholder="Search cards…">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
+            Add Card +
+        </button>
+    </div>
 
-  <div class="d-flex gap-2 align-items-center mb-3">
-    <!-- PRODUCTION: live search filter -->
-    <input id="searchCards" class="form-control" placeholder="Search cards…">
-    <!-- PRODUCTION: opens real Add/Edit card modal -->
-    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
-      Add Card +
-    </button>
-  </div>
+    <div id="cardsGrid" class="row g-3"></div>
 
-  <div id="activeSetIndicator" class="alert alert-secondary py-1 px-2 d-inline-flex align-items-center small d-none mb-3">
-    <span id="activeSetLabel" class="me-2"></span>
-    <button id="clearSetFilter"
-      type="button"
-      class="btn btn-sm btn-outline-secondary">
-      Clear filter
-    </button>
-  </div>
-
-  <!-- PRODUCTION: populated from localStorage "cards" -->
-  <div id="cardsGrid" class="row g-3"></div>
-
-  <!-- PRODUCTION: floating Add Card button (same as toolbar button) -->
+      <!-- =========================
+       Floating “+” Add Card button
+       Opens the same #cardModal as the toolbar button
+       ========================= -->
   <button class="btn btn-primary rounded-circle fab shadow" style="width:56px;height:56px"
           data-bs-toggle="modal" data-bs-target="#cardModal" aria-label="Add card">+</button>
 
-  <!-- ========== MODAL: ADD / EDIT CARD (PRODUCTION) ========== -->
+  <!-- =====================================================
+       ADD / EDIT CARD MODAL
+       - Single modal used for both creating and editing a card
+       - We track “editIndex” in JS to know which mode we’re in
+       ===================================================== -->
   <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <form class="modal-content" id="cardForm" novalidate>
         <div class="modal-header">
           <h5 class="modal-title">Add / Edit Card</h5>
-          <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <div class="modal-body">
           <div class="row g-3">
+            <!-- Required: Spanish text -->
             <div class="col-md-6">
               <label class="form-label">Spanish</label>
               <textarea class="form-control" id="esText" rows="3" required></textarea>
             </div>
-
+            <!-- Required: English text -->
             <div class="col-md-6">
               <label class="form-label">English</label>
               <textarea class="form-control" id="enText" rows="3" required></textarea>
             </div>
 
+            <!-- Auto Translate: Separate Call -->
+          <div class="col-md-12">
+            <label class="form-label">Auto Translate</label>
+
+            <div class="d-flex gap-2">
+              <select id="translateDirection" class="form-select w-auto">
+                <option value="english_to_spanish">English → Spanish</option>
+                <option value="spanish_to_english">Spanish → English</option>
+              </select>
+
+              <button type="button" id="autoTranslateBtn" class="btn btn-primary">
+                <i class="bi bi-gear-fill"></i> Auto Translate
+              </button>
+            </div>
+          </div>
+            <!-- Optional: notes -->
             <div class="col-12">
               <label class="form-label">Notes (optional)</label>
               <textarea class="form-control" id="notes" rows="2"></textarea>
             </div>
-
+            <!-- Optional: place card in one or more sets (none by default) -->
             <div class="col-12">
-              <!-- PRODUCTION: lets you assign a card to one or more sets -->
               <label class="form-label">Add to set (optional)</label>
               <select id="cardSets" class="form-select" multiple size="4">
-                <!-- placeholder hidden by CSS; kept so <select> never looks empty -->
-                <option value="" disabled hidden>(no set)</option>
+                <option value="" disabled selected hidden>(no set)</option>
+                <!-- Add <option value="setId">Set Name</option> when you implement sets -->
               </select>
               <div class="form-text">Select one or more sets.</div>
             </div>
@@ -75,14 +84,37 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <!-- Closes modal without saving -->
+          <button type = "button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <!-- Triggers JS submit handler below -->
           <button class="btn btn-primary" type="submit">Save</button>
         </div>
       </form>
     </div>
   </div>
+
   
-  <!-- PRODUCTION: Toast used when saving -->
+
+  <!-- Popup modal used for Delete. Make sure the user doesn't accidentally delete a card! -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete this card?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="confirmDeleteBtn">Yes</button>
+        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">No</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Toast used for “Saved.” feedback after saving a card -->
   <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
     <div id="appToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
       <div class="d-flex">
@@ -91,5 +123,288 @@
       </div>
     </div>
   </div>
+
+
+
+
+<script id="cards-data" type="application/json">
+  {{ cards | tojson | safe }}
+</script>
+
+
+<script>
+/* ****************************************************
+* A) STATE + DOM REFS
+* **************************************************** */
+// Container where card tiles will be rendered
+const cardsGrid = document.getElementById('cardsGrid');
+
+// Load initial cards from backend JSON
+let cards = JSON.parse(document.getElementById('cards-data').textContent);
+
+// Add placeholder sets array (we are not managing sets yet)
+cards = cards.map(c => ({ ...c, sets: [] }));
+
+// When not null, we are editing the card at this index
+let editIndex = null;
+let editingCardId = null; // Track the backend card ID when editing
+
+// Refs for optional notes + the sets <select multiple>
+const notesEl = document.getElementById('notes');
+const setsEl  = document.getElementById('cardSets');
+
+/* ****************************************************
+* B) SETS HELPERS (placeholder only)
+* - getSelectedSets(): read selected set IDs (ignore placeholder)
+* - setSelectedSets(values): preselect given set IDs on edit
+* **************************************************** */
+function getSelectedSets() {
+    return Array.from(setsEl.options)
+        .filter(o => o.selected && o.value)
+        .map(o => o.value);
+}
+function setSelectedSets(values = []) {
+    Array.from(setsEl.options).forEach(o => { o.selected = values.includes(o.value); });
+}
+
+/* ****************************************************
+* C) ADD/EDIT MODAL LIFECYCLE
+* **************************************************** */
+document.querySelectorAll('[data-bs-target="#cardModal"]').forEach(btn => {
+    btn.addEventListener('click', () => { 
+        editIndex = null; 
+        editingCardId = null;
+    });
+});
+
+const cardModalEl = document.getElementById('cardModal');
+
+cardModalEl.addEventListener('show.bs.modal', () => {
+    if (editIndex === null) {
+        const form = document.getElementById('cardForm');
+        form.reset();
+        notesEl.value = '';
+        Array.from(setsEl.options).forEach(o => { o.selected = false; });
+        setsEl.selectedIndex = -1;
+    }
+});
+
+cardModalEl.addEventListener('hidden.bs.modal', () => {
+    Array.from(setsEl.options).forEach(o => { o.selected = false; });
+    setsEl.selectedIndex = -1;
+});
+
+/* ****************************************************
+* D) RENDER CARDS GRID
+* **************************************************** */
+function renderCards() {
+    cardsGrid.innerHTML = ''; 
+    cards.forEach((card, index) => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+        col.innerHTML = `
+        <div class="card h-100" data-index="${index}">
+            <div class="card-body">
+                <div class="small text-muted">Spanish</div>
+                <h5 class="card-title mb-1">${card.spanish_text}</h5>
+
+                <div class="small text-muted">English</div>
+                <p class="card-text mb-2">${card.english_text}</p>
+
+                ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
+
+                ${
+                    card.sets?.length
+                    ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
+                        card.sets.map(s => `<span class="badge text-bg-light">${s}</span>`).join('') +
+                        `</div>`
+                    : ``
+                }
+
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
+                    <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
+                </div>
+            </div>
+        </div>`;
+        cardsGrid.appendChild(col);
+    });
+}
+
+/* ****************************************************
+* E) ADD/EDIT SUBMIT HANDLER
+* **************************************************** */
+document.getElementById('cardForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const es    = document.getElementById('esText').value.trim();
+    const en    = document.getElementById('enText').value.trim();
+    const notes = notesEl.value.trim();
+    const sets  = getSelectedSets();
+
+    if (!es || !en) return;
+
+    try {
+        let response, data;
+        if (editingCardId) {
+            response = await fetch(`/cards/edit/${editingCardId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ english_text: en, spanish_text: es, notes })
+            });
+            data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to update card');
+
+            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes, sets };
+        } else {
+            response = await fetch('/cards/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ english_text: en, spanish_text: es, notes })
+            });
+            data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to create card');
+
+            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes, sets });
+        }
+
+        renderCards();
+
+        const m = document.getElementById('cardModal');
+        (bootstrap.Modal.getInstance(m) || new bootstrap.Modal(m)).hide();
+
+        new bootstrap.Toast(document.getElementById('appToast')).show();
+
+        e.target.reset();
+        setSelectedSets([]);
+        editIndex = null;
+        editingCardId = null;
+
+    } catch (err) {
+        console.error(err);
+        alert(err.message);
+    }
+});
+
+/* ****************************************************
+* F) ROW ACTIONS: DELETE / EDIT
+* **************************************************** */
+
+let deleteIndex = null;
+
+cardsGrid.addEventListener('click', async (e) => {
+    const index = e.target.closest('[data-index]')?.dataset.index;
+    if (index === undefined) return;
+
+    if (e.target.dataset.action === 'deleteCard') {
+        pendingDeleteIndex = Number(index);
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        deleteModal.show();
+    }
+
+    if (e.target.dataset.action === 'editCard') {
+        editIndex = Number(index);
+        editingCardId = cards[editIndex].id;
+
+        document.getElementById('esText').value = cards[editIndex].spanish_text || '';
+        document.getElementById('enText').value = cards[editIndex].english_text || '';
+        notesEl.value = cards[editIndex].notes || '';
+        setSelectedSets(cards[editIndex].sets || []);
+
+        const modal = new bootstrap.Modal(document.getElementById('cardModal'));
+        modal.show();
+    }
+});
+
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+      if (pendingDeleteIndex === null) return;
+
+      const cardId = cards[pendingDeleteIndex].id;
+      try {
+          const response = await fetch(`/cards/delete/${cardId}`, { method: 'DELETE' });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Failed to delete card');
+
+          cards.splice(pendingDeleteIndex, 1);
+          renderCards();
+      } catch (err) {
+          console.error(err);
+          alert(err.message);
+      } finally {
+          pendingDeleteIndex = null;
+          bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+      }
+  });
+
+
+/* ****************************************************
+* G) INITIAL RENDER: draw everything we have at load
+* **************************************************** */
+renderCards();
+
+/* ****************************************************
+* I) SEARCH FILTER
+* **************************************************** */
+const searchInput = document.getElementById('searchCards');
+searchInput.addEventListener('input', () => {
+    const term = searchInput.value.toLowerCase();
+    document.querySelectorAll('#cardsGrid .card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.parentElement.style.display = text.includes(term) ? '' : 'none';
+    });
+});
+</script>
+
+
+
+  <script>
+        document.getElementById("autoTranslateBtn").addEventListener("click", async () => {
+        const direction = document.getElementById("translateDirection").value;
+
+        // Choose source text based off of given direction
+        let text = "";
+        if (direction === "english_to_spanish") {
+            text = document.getElementById("enText").value.trim();
+        } else {
+            text = document.getElementById("esText").value.trim();
+        }
+
+        if (!text) {
+            alert("Text must be present to translate.");
+            return;
+        }
+
+        try {
+            const response = await fetch("/cards/auto-translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text, direction })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert("Translation failed: " + (data.error || "Unknown error"));
+                return;
+            }
+
+            const translated = data.translated_text;
+
+            // Place into the other box
+            if (direction === "english_to_spanish") {
+                document.getElementById("esText").value = translated;
+            } else {
+                document.getElementById("enText").value = translated;
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Network error during translation. Please try again later.");
+        }
+    });
+
+
+
+  </script>
 </main>
 {% endblock %}
