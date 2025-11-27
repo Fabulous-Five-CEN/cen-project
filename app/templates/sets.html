@@ -80,5 +80,30 @@
             </form>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this set?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="confirmDeleteBtn">Yes</button>
+                <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">No</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
 </main>
+
+<script id="sets-data" type="application/json">
+    {{ user_sets | tojson | safe }}
+</script>
+
 {% endblock %}

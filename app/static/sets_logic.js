@@ -1,4 +1,7 @@
 const userSetsList      = document.getElementById('userSetsList');
+// Load sets from script tag
+const userSetsScript = document.getElementById('sets-data');
+let userSets = userSetsScript ? JSON.parse(userSetsScript.textContent) : [];
 
         // PRODUCTION: inject a set name into both selects
         function addSetOption(setObj) {
@@ -52,7 +55,7 @@ const userSetsList      = document.getElementById('userSetsList');
             userSets.forEach((setObj, index) => {
                 const name = setObj.name;
                 const description = setObj.description || '';
-                const cardCount = countCardsInSet(name);
+                const cardCount = setObj.card_count || 0;
                 
                 const card = document.createElement('div');
                 card.className = 'card border-0 shadow-sm';
@@ -68,24 +71,25 @@ const userSetsList      = document.getElementById('userSetsList');
                     <div class="small text-muted mt-1">${cardCount} card${cardCount !== 1 ? 's' : ''}</div>
                     </div>
                     <div class="d-flex gap-2">
-                    <button
-                        class="btn btn-sm btn-outline-secondary"
-                        data-action="editSet"
-                        data-set-index="${index}">
-                        Edit
-                    </button>
-                    <button
-                        class="btn btn-sm btn-outline-primary"
-                        data-action="viewSet"
-                        data-set-name="${name}">
-                        View
-                    </button>
-                    <button
-                        class="btn btn-sm btn-outline-danger"
-                        data-action="deleteSet"
-                        data-set-name="${name}">
-                        Delete
-                    </button>
+                <button
+                    class="btn btn-sm btn-outline-secondary"
+                    data-action="editSet"
+                    data-set-id="${setObj.id}">
+                    Edit
+                </button>
+                <button
+                    class="btn btn-sm btn-outline-primary"
+                    data-action="viewSet"
+                    data-set-id="${setObj.id}">
+                    View
+                </button>
+                <button
+                    class="btn btn-sm btn-outline-danger"
+                    data-action="deleteSet"
+                    data-set-id="${setObj.id}">
+                    Delete
+                </button>
+
                     </div>
                 </div>
                 `;
@@ -105,71 +109,61 @@ const userSetsList      = document.getElementById('userSetsList');
                 if (!action) return;
 
                 // EDIT: open modal with existing name and description
-                if (action === 'editSet') {
-                    editSetIndex = parseInt(index);
-                    const setObj = userSets[editSetIndex];
-                    
-                    document.getElementById('setName').value = setObj.name;
-                    document.getElementById('setDesc').value = setObj.description || '';
-                    document.getElementById('setModalTitle').textContent = 'Edit Set';
-                    
-                    const modalEl = document.getElementById('setEditModal');
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                    return;
-                }
+            if (action === 'editSet') {
+                const setId = parseInt(e.target.dataset.setId);
+                const setObj = userSets.find(s => s.id === setId);
+                editSetId = setId;
+
+                document.getElementById('setName').value = setObj.name;
+                document.getElementById('setDesc').value = setObj.description || '';
+                document.getElementById('setModalTitle').textContent = 'Edit Set';
+
+                const modalEl = document.getElementById('setEditModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                return;
+            }
 
                 // VIEW: jump to All Cards and filter by this set
                 if (action === 'viewSet') {
-                    activeSetFilter = name;          // remember which set we're showing
-                    renderCards();                   // re-render All Cards using filter
+                    const setId = parseInt(e.target.dataset.setId);
+                    if (!setId) return;
 
-                    localStorage.setItem('activeSetFilter', name);
-                    window.location.href = '/cards';
+                    window.location.href = `/sets/view/${setId}`;
                     return;
                 }
-
+                    
                 // DELETE: remove the set everywhere
                 if (action === 'deleteSet') {
-                    if (!window.confirm(`Delete set "${name}"? This will remove it from cards but not delete the cards themselves.`)) {
-                        return;
-                    }
+                    // show popup module
+                    const setObj = userSets.find(s => s.id === parseInt(e.target.dataset.setId));
+                    if (!setObj) return;
 
-                    // 1) Remove from userSets array + localStorage
-                    userSets = userSets.filter(s => s.name !== name);
-                    localStorage.setItem('userSets', JSON.stringify(userSets));
+                    const deleteModalEl = document.getElementById('deleteConfirmModal');
+                    const deleteModal = new bootstrap.Modal(deleteModalEl);
+                    deleteModal.show();
 
-                    // 2) Remove from the "Add to set" dropdown in the Card modal
-                    if (window.setsEl) {
-                        Array.from(window.setsEl.options).forEach(o => {
-                            if (o.value === name) o.remove();
+                    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+                    // Remove previous click handlers to avoid stacking
+                    confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+                    const newConfirmBtn = document.getElementById('confirmDeleteBtn');
+
+                    newConfirmBtn.addEventListener('click', () => {
+                        fetch(`/sets/delete/${setObj.id}`, {
+                            method: 'DELETE'
+                        })
+                        .then(res => res.json())
+                        .then(resp => {
+                            // Remove from in-memory list
+                            userSets = userSets.filter(s => s.id !== setObj.id);
+                            renderUserSets();
+                            deleteModal.hide();
                         });
-                    }
-
-                    // 3) Remove from the Practice set dropdown
-                    if (window.practiceSetSelect) {
-                        Array.from(window.practiceSetSelect.options).forEach(o => {
-                            if (o.value === name) o.remove();
-                        });
-                    }
-                    
-                    // 4) Remove this set tag from any cards that used it
-                    cards = cards.map(card => {
-                    const oldSets = Array.isArray(card.sets) ? card.sets : [];
-                    const newSets = oldSets.filter(s => s !== name);
-                    return { ...card, sets: newSets };
                     });
-                    localStorage.setItem('cards', JSON.stringify(cards));
-
-                    // 5) If we were viewing this set, clear the filter
-                    if (activeSetFilter === name) {
-                        activeSetFilter = null;
-                    }
-
-                    // 6) Re-render UI
-                    renderUserSets();
-                    renderCards();
                 }
+
+
             });
         }
 
@@ -188,70 +182,36 @@ const userSetsList      = document.getElementById('userSetsList');
                 
                 if (!name) return;
 
-                if (editSetIndex !== null) {
-                // EDITING existing set
-                const oldName = userSets[editSetIndex].name;
-                
-                // Update the set object
-                userSets[editSetIndex] = { name, description };
-                localStorage.setItem('userSets', JSON.stringify(userSets));
-                
-                // If name changed, update it everywhere
-                if (oldName !== name) {
-                    // Update in card modal dropdown
-                    if (window.setsEl) {
-                        Array.from(window.setsEl.options).forEach(o => {
-                            if (o.value === oldName) {
-                                o.value = name;
-                                o.text = name;
-                            }
-                        });
-                    }
-                    
-                    // Update in practice dropdown
-                    if (window.practiceSetSelect) {
-                        Array.from(window.practiceSetSelect.options).forEach(o => {
-                            if (o.value === oldName) {
-                                o.value = name;
-                                o.text = name;
-                            }
-                        });
-                    }
-                    
-                    // Update in all cards that reference this set
-                    cards = cards.map(card => {
-                    if (Array.isArray(card.sets)) {
-                        return {
-                        ...card,
-                        sets: card.sets.map(s => s === oldName ? name : s)
-                        };
-                    }
-                    return card;
-                    });
-                    localStorage.setItem('cards', JSON.stringify(cards));
-                    
-                    // Update active filter if it was showing this set
-                    if (activeSetFilter === oldName) {
-                        activeSetFilter = name;
-                    }
-                }
-                
-                editSetIndex = null;
-                renderUserSets();
-                renderCards();
-                
-                } else {
-                // CREATING new set
-                // 1) Add to selects so you can assign cards to this set
-                addSetOption({ name, description });
+        if (editSetId) {
+            // EDIT SET USING API
+            fetch(`/sets/edit/${editSetId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description })
+            })
+            .then(res => res.json())
+            .then(updated => {
+                // Replace the updated set in our local memory
+                const idx = userSets.findIndex(s => s.id === editSetId);
+                if (idx !== -1) userSets[idx] = updated.set;
 
-                // 2) Persist the set
-                if (!userSets.some(s => s.name === name)) {
-                    userSets.push({ name, description });
-                    localStorage.setItem('userSets', JSON.stringify(userSets));
-                    renderUserSets(); // re-render My Sets list
-                }
-                }
+                renderUserSets();
+            });
+        } else {
+            // CREATE NEW SET USING API
+            fetch('/sets/new', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, description })
+            })
+            .then(res => res.json())
+            .then(resp => {
+                // Prepend new set to the top of the list
+                userSets.unshift(resp.set);
+                renderUserSets();
+            });
+        }
+
 
                 // 3) Clear + close modal
                 nameInput.value = '';
@@ -268,7 +228,7 @@ const userSetsList      = document.getElementById('userSetsList');
         
         setModalTrigger.forEach(btn => {
             btn.addEventListener('click', () => {
-            editSetIndex = null;
+            editSetId = null;
             document.getElementById('setName').value = '';
             document.getElementById('setDesc').value = '';
             document.getElementById('setModalTitle').textContent = 'New Set';

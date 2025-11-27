@@ -5,10 +5,20 @@ from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
 from flask_login import login_required, current_user
 
+@login_required
 @sets_bp.route("/")
 def sets_home():
-    return render_template("sets.html")
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+    
+    """Gets all sets associated with a specific user_id."""
 
+    all_sets = SetTable.query.filter_by(user_id=user_id).order_by(SetTable.created_at.desc()).all()
+    set_list = [serialize_set(s) for s in all_sets]
+    
+    return render_template("sets.html", user_sets=set_list)
 def serialize_set(set_obj):
     """Converts a SetTable object into a JSON-friendly dictionary."""
     return {
@@ -27,26 +37,33 @@ def get_set_or_404(set_id, description=None):
         abort(404, description=description or f"Set with id {set_id} not found")
     return set_obj
 
-
-@sets_bp.route("/all", methods=["GET"])
-def get_all_sets():
-    """Gets all sets associated with a specific user_id."""
-    user_id = request.args.get('user_id', type=int)
-    if not user_id:
-        return jsonify({"error": "user_id query parameter is required"}), 400
-
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-
-    all_sets = SetTable.query.filter_by(user_id=user_id).order_by(SetTable.created_at.desc()).all()
-    set_list = [serialize_set(s) for s in all_sets]
+# @login_required
+# @sets_bp.route("/all", methods=["GET"])
+# def get_all_sets():
+#     # Check that user is in database
+#     user_id = current_user.id
+#     user = db.session.get(User, user_id)
+#     if not user:
+#         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
     
-    return jsonify(set_list), 200
+#     """Gets all sets associated with a specific user_id."""
 
+#     all_sets = SetTable.query.filter_by(user_id=user_id).order_by(SetTable.created_at.desc()).all()
+#     set_list = [serialize_set(s) for s in all_sets]
+    
+#     return render_template("sets.html", set_list)
+
+@login_required
 @sets_bp.route("/<int:set_id>", methods=["GET"])
 def get_set_details(set_id):
     """Gets details for a single set, including its cards."""
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+
+
     set_obj = get_set_or_404(set_id)
     set_data = serialize_set(set_obj)
     set_data['cards'] = [
@@ -55,19 +72,20 @@ def get_set_details(set_id):
     ]
     return jsonify(set_data), 200
 
+@login_required
 @sets_bp.route("/new", methods=["POST"])
 def new_set():
     data = request.get_json() or {}
     name = data.get("name")
     description = data.get("description")
-    user_id = data.get("user_id")
 
-    if not name or not user_id:
-        return jsonify({"error": "Missing one of these required fields: name, user_id"}), 400
+    if not name:
+        return jsonify({"error": "Missing one of these required fields: name"}), 400
 
+    user_id = current_user.id
     user = db.session.get(User, user_id)
     if not user:
-        return jsonify({"error": f"User with id {user_id} is not a registered user"}), 404
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
 
     new_set_obj = SetTable(
         name=name,
@@ -85,8 +103,15 @@ def new_set():
         db.session.rollback()
         return jsonify({"error": f"Failed to create set: {str(e)}"}), 500
 
+@login_required
 @sets_bp.route("/edit/<int:set_id>", methods=["PUT"])
 def edit_set(set_id):
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+
     data = request.get_json() or {}
     set_obj = get_set_or_404(set_id)
 
@@ -109,8 +134,15 @@ def edit_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to update set: {str(e)}"}), 500
 
+@login_required
 @sets_bp.route("/delete/<int:set_id>", methods=["DELETE"])
 def delete_set(set_id):
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+
     set_obj = get_set_or_404(set_id)
     try:
         db.session.delete(set_obj)
@@ -120,8 +152,15 @@ def delete_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to delete set: {str(e)}"}), 500
 
+@login_required
 @sets_bp.route("/add_card/<int:set_id>", methods=["POST"])
 def add_card_to_set(set_id):
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+
     data = request.get_json() or {}
     card_ids = data.get("card_ids")
     if not card_ids:
@@ -151,8 +190,15 @@ def add_card_to_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to add cards to set: {str(e)}"}), 500
 
+@login_required
 @sets_bp.route("/delete_card/<int:set_id>", methods=["POST"])
 def delete_card_from_set(set_id):
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+
     data = request.get_json() or {}
     card_id = data.get("card_id")
     if not card_id:
@@ -173,3 +219,32 @@ def delete_card_from_set(set_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to remove card from set: {str(e)}"}), 500
+
+@sets_bp.route("/view/<int:set_id>")
+@login_required
+def view_set(set_id):
+
+    user_id = current_user.id
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
+
+
+    set_obj = get_set_or_404(set_id)
+    user_cards = [
+        {
+            "id": card.id,
+            "spanish_text": card.spanish_text,
+            "english_text": card.english_text,
+            "notes": card.notes,
+            "is_starred": card.is_starred,
+            "set_ids": [s.id for s in card.sets],
+        }
+        for card in set_obj.cards
+    ]
+    return render_template(
+        "view_set.html",
+        set_name=set_obj.name,
+        set_id=set_id,
+        cards=user_cards
+    )
