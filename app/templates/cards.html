@@ -2,11 +2,11 @@
 
 {% block content %}
 <main id="cards-page" class="container py-4 flex-grow-1">
-  <div class="d-flex mb-2">
+  <div class="mb-2">
       <h4 class="section-title mb-0">
-        All Cards <span class="section-subtitle" id="cardCount">(0 cards)</span>
+        All Cards <span class="fs-5" id="cardCount">(0 cards)</span>
       </h4>
-      
+
       <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
   </div>
   
@@ -231,7 +231,7 @@ function renderCards() {
         cardsGrid.appendChild(col);
     });
 
-    document.getElementById("cardCount").textContent = `${cards.length} cards`;
+    document.getElementById("cardCount").textContent = `(${cards.length} cards)`;
 }
 
 /* ****************************************************
