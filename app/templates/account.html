@@ -2,56 +2,89 @@
 
 {% block content %}
 <main id="account-page" class="container py-4 flex-grow-1">
+  <div class="mb-3">
+    <h4 class="section-title mb-0">Account</h4>
+    <div class="section-subtitle">Sign in to sync your cards across devices.</div>
+  </div>
+
   <div class="row justify-content-center">
     <div class="col-sm-10 col-md-7 col-lg-5">
-      <div class="card shadow-sm">
+      <!-- Logged-out: sign-in form -->
+      <div id="accountLoggedOut" class="card shadow-sm mb-3">
         <div class="card-body">
           <h5 class="card-title text-center mb-3">Sign in</h5>
-
           <form id="loginForm" novalidate>
             <div class="mb-3">
-              <label class="form-label" for="email">Email</label>
-              <input class="form-control" id="email" type="email" required>
+              <label class="form-label" for="loginEmail">Email</label>
+              <input class="form-control" id="loginEmail" type="email" required>
             </div>
-
             <div class="mb-3">
-              <label class="form-label" for="password">Password</label>
-              <input class="form-control" id="password" type="password" required>
+              <label class="form-label" for="loginPassword">Password</label>
+              <input class="form-control" id="loginPassword" type="password" required>
             </div>
-
             <button class="btn btn-primary w-100" type="submit">Sign in</button>
           </form>
-
-          <div class="text-center small mt-3 text-muted">Demo mode coming soon</div>
+          <div class="text-center small mt-3">
+            <button id="switchToRegister" type="button" class="btn btn-link p-0">
+              Need an account? Register
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- Registration form -->
+      <div id="accountRegister" class="card shadow-sm mb-3 d-none">
+        <div class="card-body">
+          <h5 class="card-title text-center mb-3">Create account</h5>
+          <form id="registerForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="regEmail">Email</label>
+              <input class="form-control" id="regEmail" type="email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="regUsername">Username</label>
+              <input class="form-control" id="regUsername" type="text" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="regPassword">Password</label>
+              <input class="form-control" id="regPassword" type="password" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="regConfirm">Confirm password</label>
+              <input class="form-control" id="regConfirm" type="password" required>
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Create account</button>
+          </form>
+          <div class="text-center small mt-3">
+            <button id="switchToLogin" type="button" class="btn btn-link p-0">
+              Back to sign in
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logged-in account info -->
+      <div id="accountInfo" class="card shadow-sm mb-3 d-none">
+        <div class="card-body">
+          <h5 class="card-title text-center mb-3">Account info</h5>
+          <dl class="row mb-0">
+            <dt class="col-4">Email</dt>
+            <dd class="col-8" id="infoEmail"></dd>
+            <dt class="col-4">Username</dt>
+            <dd class="col-8" id="infoUsername"></dd>
+            <dt class="col-4">Joined</dt>
+            <dd class="col-8" id="infoJoined"></dd>
+          </dl>
+          <button id="logoutBtn" class="btn btn-outline-danger w-100 mt-3">
+            Log out
+          </button>
+        </div>
+      </div>
+
+      <!-- Shared auth error area -->
+      <div id="authError" class="alert alert-danger small d-none mt-2"></div>
     </div>
   </div>
 </main>
 
-<script>
-document.getElementById("loginForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-
-    const response = await fetch("/auth/login", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email, password })
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-        // backend tells the frontend where to go
-        window.location.href = result.redirect;
-    } else {
-        alert(result.error || "Login failed");
-    }
-});
-</script>
 {% endblock %}
