@@ -3,10 +3,12 @@
 {% block content %}
 <main id="cards-page" class="container py-4 flex-grow-1">
   <div class="d-flex justify-content-between align-items-center mb-2">
-    <div>
+    <div class="d-flex align-items-baseline gap-2">
       <h4 class="section-title mb-0">All Cards</h4>
-      <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
+      <span class="section-subtitle" id="cardCount">0 cards</span>
     </div>
+    
+    <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
   </div>
   
     <div class="d-flex gap-2 align-items-center mb-3">
@@ -229,6 +231,8 @@ function renderCards() {
         </div>`;
         cardsGrid.appendChild(col);
     });
+
+    document.getElementById('cardCount').textContent = cards.length;
 }
 
 /* ****************************************************
