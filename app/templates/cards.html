@@ -237,20 +237,20 @@ function renderCards() {
     
           <div class="d-flex flex-column gap-1" style="position:absolute; top:8px; right:8px;">
               
-              <button class="btn btn-sm btn-outline-primary rounded-circle" 
-                      data-action="editCard" 
-                      style="width:30px; height:30px; padding:0;">
+              <button class="btn btn-sm btn-primary rounded-circle" 
+                  data-action="editCard" 
+                  style="width:30px; height:30px; padding:0;">
                   <i class="fa-solid fa-pencil"></i>
               </button>
 
-              <button class="btn btn-sm btn-outline-success rounded-circle"
+              <button class="btn btn-sm btn-success rounded-circle"
                   data-action="assignSets"
                   style="width:30px; height:30px; padding:0;">
                   <i class="fa-solid fa-layer-group"></i> </button>
 
-              <button class="btn btn-sm btn-outline-danger rounded-circle" 
-                      data-action="deleteCard" 
-                      style="width:30px; height:30px; padding:0;">
+              <button class="btn btn-sm btn-danger rounded-circle" 
+                  data-action="deleteCard" 
+                  style="width:30px; height:30px; padding:0;">
                   <i class="fa-solid fa-trash-can"></i>
               </button>
           </div>
@@ -383,38 +383,41 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
 let deleteIndex = null;
 
 cardsGrid.addEventListener('click', async (e) => {
-    const index = e.target.closest('[data-index]')?.dataset.index;
-    if (index === undefined) return;
+    
+    const actionButton = e.target.closest('button[data-action]');
+    if (!actionButton) return;
 
-    if (e.target.dataset.action === 'deleteCard') {
-        pendingDeleteIndex = Number(index);
+    const action = actionButton.dataset.action;
+    
+    const cardElement = actionButton.closest('[data-index]');
+    const index = cardElement?.dataset.index;
+    if (index === undefined) return;
+    
+    const idx = Number(index);
+        
+    if (action === 'deleteCard') {
+        pendingDeleteIndex = idx;
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         deleteModal.show();
     }
 
-    if (e.target.dataset.action === 'editCard') {
-        editIndex = Number(index);
+    if (action === 'editCard') {
+        editIndex = idx;
         editingCardId = cards[editIndex].id;
-
-        document.getElementById('esText').value = cards[editIndex].spanish_text || '';
-        document.getElementById('enText').value = cards[editIndex].english_text || '';
-        notesEl.value = cards[editIndex].notes || '';
-        setSelectedSets(cards[editIndex].sets || []);
-
         const modal = new bootstrap.Modal(document.getElementById('cardModal'));
         modal.show();
     }
-    if (e.target.dataset.action === "assignSets") {
-    assignCardIndex = Number(index);
-    assignCardId = cards[assignCardIndex].id;
+    
+    if (action === "assignSets") {
+        assignCardIndex = idx;
+        assignCardId = cards[assignCardIndex].id;
 
-    const selected = cards[assignCardIndex].set_ids || [];
+        const selected = cards[assignCardIndex].set_ids || [];
 
-    loadAssignSets(selected);
+        loadAssignSets(selected);
 
-    new bootstrap.Modal(assignModalEl).show();
-  }
-
+        new bootstrap.Modal(assignModalEl).show();
+    }
 });
 
   document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
