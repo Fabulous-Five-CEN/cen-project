@@ -57,9 +57,9 @@
               <textarea class="form-control" id="enText" rows="3" required></textarea>
             </div>
 
-            <!-- Auto Translate: Separate Call -->
+            <!-- Auto-translate: Separate Call -->
           <div class="col-md-12">
-            <label class="form-label">Auto Translate</label>
+            <label class="form-label">Auto-translate</label>
 
             <div class="d-flex gap-2">
               <select id="translateDirection" class="form-select w-auto">
@@ -68,7 +68,7 @@
               </select>
 
               <button type="button" id="autoTranslateBtn" class="btn btn-primary">
-                <i class="bi bi-gear-fill"></i> Auto Translate
+                <i class="bi bi-gear-fill"></i> Auto-translate
               </button>
             </div>
           </div>
@@ -184,20 +184,6 @@ const notesEl = document.getElementById('notes');
 const setsEl  = document.getElementById('cardSets');
 
 /* ****************************************************
-* B) SETS HELPERS (placeholder only)
-* - getSelectedSets(): read selected set IDs (ignore placeholder)
-* - setSelectedSets(values): preselect given set IDs on edit
-* **************************************************** */
-function getSelectedSets() {
-    return Array.from(setsEl.options)
-        .filter(o => o.selected && o.value)
-        .map(o => o.value);
-}
-function setSelectedSets(values = []) {
-    Array.from(setsEl.options).forEach(o => { o.selected = values.includes(o.value); });
-}
-
-/* ****************************************************
 * C) ADD/EDIT MODAL LIFECYCLE
 * **************************************************** */
 document.querySelectorAll('[data-bs-target="#cardModal"]').forEach(btn => {
@@ -214,14 +200,8 @@ cardModalEl.addEventListener('show.bs.modal', () => {
         const form = document.getElementById('cardForm');
         form.reset();
         notesEl.value = '';
-        Array.from(setsEl.options).forEach(o => { o.selected = false; });
-        setsEl.selectedIndex = -1;
-    }
-});
 
-cardModalEl.addEventListener('hidden.bs.modal', () => {
-    Array.from(setsEl.options).forEach(o => { o.selected = false; });
-    setsEl.selectedIndex = -1;
+    }
 });
 
 /* ****************************************************
@@ -277,7 +257,7 @@ function renderCards() {
         cardsGrid.appendChild(col);
     });
 
-    document.getElementById("cardCount").textContent = `(${cards.length} cards)`;
+    document.getElementById("cardCount").textContent = `(${cards.length} card${cards.length === 1 ? '' : 's'});
 }
 
 /* ****************************************************
@@ -330,7 +310,6 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
     const es    = document.getElementById('esText').value.trim();
     const en    = document.getElementById('enText').value.trim();
     const notes = notesEl.value.trim();
-    const sets  = getSelectedSets();
 
     if (!es || !en) return;
 
@@ -345,7 +324,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
             data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to update card');
 
-            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes, sets };
+            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes };
         } else {
             response = await fetch('/cards/new', {
                 method: 'POST',
@@ -355,7 +334,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
             data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to create card');
 
-            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes, sets });
+            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes });
         }
 
         renderCards();
@@ -366,7 +345,6 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
         new bootstrap.Toast(document.getElementById('appToast')).show();
 
         e.target.reset();
-        setSelectedSets([]);
         editIndex = null;
         editingCardId = null;
 
@@ -380,7 +358,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
 * F) ROW ACTIONS: DELETE / EDIT
 * **************************************************** */
 
-let deleteIndex = null;
+let pendingDeleteIndex = null;
 
 cardsGrid.addEventListener('click', async (e) => {
     
@@ -404,6 +382,11 @@ cardsGrid.addEventListener('click', async (e) => {
     if (action === 'editCard') {
         editIndex = idx;
         editingCardId = cards[editIndex].id;
+
+        document.getElementById('esText').value = cards[editIndex].spanish_text || '';
+        document.getElementById('enText').value = cards[editIndex].english_text || '';
+        notesEl.value = cards[editIndex].notes || '';
+
         const modal = new bootstrap.Modal(document.getElementById('cardModal'));
         modal.show();
     }
