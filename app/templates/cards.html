@@ -234,34 +234,45 @@ function renderCards() {
         col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
         col.innerHTML = `
         <div class="card h-100" data-index="${index}">
-          <button class="btn rounded-circle btn-success"
-        data-action="assignSets"
-        style="position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0;">
-          +
-        </button>
+    
+          <div class="d-flex flex-column gap-1" style="position:absolute; top:8px; right:8px;">
+              
+              <button class="btn btn-sm btn-outline-primary rounded-circle" 
+                      data-action="editCard" 
+                      style="width:30px; height:30px; padding:0;">
+                  <i class="fa-solid fa-pencil"></i>
+              </button>
 
-            <div class="card-body d-flex flex-column">
-                <div class="small text-muted">Spanish</div>
-                <h5 class="card-title mb-1">${card.spanish_text}</h5>
+              <button class="btn btn-sm btn-outline-success rounded-circle"
+                  data-action="assignSets"
+                  style="width:30px; height:30px; padding:0;">
+                  <i class="fa-solid fa-layer-group"></i> </button>
 
-                <div class="small text-muted">English</div>
-                <p class="card-text mb-2">${card.english_text}</p>
+              <button class="btn btn-sm btn-outline-danger rounded-circle" 
+                      data-action="deleteCard" 
+                      style="width:30px; height:30px; padding:0;">
+                  <i class="fa-solid fa-trash-can"></i>
+              </button>
+          </div>
+          
+          <div class="card-body d-flex flex-column">
+              <div class="small text-muted">Spanish</div>
+              <h5 class="card-title mb-1">${card.spanish_text}</h5>
 
-                ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
+              <div class="small text-muted">English</div>
+              <p class="card-text mb-2">${card.english_text}</p>
 
-                ${
-                    card.sets?.length
-                    ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
-                        card.sets.map(sName => `<span class="badge text-bg-light">${sName}</span>`).join('') +
-                        `</div>`
-                    : ``
-                }
+              ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
 
-                <div class="d-flex justify-content-between mt-auto">
-                    <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
-                </div>
-            </div>
+              ${
+                  card.sets?.length
+                  ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
+                      card.sets.map(sName => `<span class="badge text-bg-light">${sName}</span>`).join('') +
+                      `</div>`
+                  : ``
+              }
+
+              </div>
         </div>`;
         cardsGrid.appendChild(col);
     });
