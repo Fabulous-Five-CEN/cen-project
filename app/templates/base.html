@@ -80,10 +80,12 @@
       // 2) Render the sets list
       // 3) Render all cards
       // 4) Sync account info
-
+      if (!document.getElementById('practice-page')) {
       userSets.forEach(name => addSetOption(name));
       renderUserSets();
       renderCards();
-    </script> -->
+      }
+
+    </script> 
   </body>
 </html>
