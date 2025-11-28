@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<main id="view-set-page" class="container py-4 flex-grow-1">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="section-title mb-0">View Cards for Set {{ set_name }}</h4>
+      <div class="section-subtitle">Browse, search, and edit cards in this set.</div>
+    <a href="{{ url_for('cards.cards_home') }}" class="btn btn-outline-secondary">
+      Exit Set and View All Cards
+    </a>
+    </div>
+ 
+  </div>
+
+  <!-- Search + Add -->
+  <div class="d-flex gap-2 align-items-center mb-3">
+      <input id="searchCards" class="form-control" placeholder="Search cards…">
+      <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#cardModal">
+          Add Card +
+      </button>
+  </div>
+
+  <!-- Cards Grid -->
+  <div id="cardsGrid" class="row g-3"></div>
+
+
+  <!-- =====================================================
+       ADD / EDIT CARD MODAL
+       Single modal used for both creating and editing a card
+  ===================================================== -->
+  <div class="modal fade" id="cardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="cardForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Add / Edit Card</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Spanish</label>
+              <textarea class="form-control" id="esText" rows="3" required></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">English</label>
+              <textarea class="form-control" id="enText" rows="3" required></textarea>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">Auto Translate</label>
+              <div class="d-flex gap-2">
+                <select id="translateDirection" class="form-select w-auto">
+                  <option value="english_to_spanish">English → Spanish</option>
+                  <option value="spanish_to_english">Spanish → English</option>
+                </select>
+                <button type="button" id="autoTranslateBtn" class="btn btn-primary">
+                  <i class="bi bi-gear-fill"></i> Auto Translate
+                </button>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Notes (optional)</label>
+              <textarea class="form-control" id="notes" rows="2"></textarea>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Add to set (optional)</label>
+              <select id="cardSets" class="form-select" multiple size="4">
+                <option value="" disabled selected hidden>(no set)</option>
+              </select>
+              <div class="form-text">Select one or more sets.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRM MODAL -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirm Delete</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete this card? Card will be deleted from entire database, not just the set.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="confirmDeleteBtn">Yes</button>
+          <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">No</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- REMOVE FROM SET CONFIRM MODAL -->
+    <div class="modal fade" id="removeConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Confirm Remove</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            Are you sure you want to remove this card from this set?
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="confirmRemoveBtn">Yes</button>
+            <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">No</button>
+        </div>
+        </div>
+    </div>
+    </div>
+
+
+
+  <!-- Toast Feedback -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+    <div id="appToast" class="toast align-items-center text-bg-success border-0" role="status" aria-live="polite" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body">Saved.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON DATA -->
+  <script id="cards-data" type="application/json">
+    {{ cards | tojson | safe }}
+  </script>
+
+    <script id="currentSetData" type="application/json">
+    {{ set_id | tojson }}
+    </script>
+
+    <script>
+    const currentSetId = JSON.parse(document.getElementById('currentSetData').textContent);
+    </script>
+
+
+  <!-- =====================================================
+       JS: STATE, RENDER, HANDLERS
+  ===================================================== -->
+  <script>
+  const cardsGrid = document.getElementById('cardsGrid');
+  let cards = JSON.parse(document.getElementById('cards-data').textContent);
+  let editIndex = null;
+  let editingCardId = null;
+  const notesEl = document.getElementById('notes');
+  const setsEl = document.getElementById('cardSets');
+
+
+  // -----------------------
+  // Sets helpers
+  function getSelectedSets() {
+    return Array.from(setsEl.options).filter(o => o.selected && o.value).map(o => o.value);
+  }
+  function setSelectedSets(values = []) {
+    Array.from(setsEl.options).forEach(o => o.selected = values.includes(o.value));
+  }
+
+  // -----------------------
+  // Modal lifecycle
+  document.querySelectorAll('[data-bs-target="#cardModal"]').forEach(btn => {
+    btn.addEventListener('click', () => { editIndex = null; editingCardId = null; });
+  });
+  const cardModalEl = document.getElementById('cardModal');
+  cardModalEl.addEventListener('show.bs.modal', () => {
+    if (editIndex === null) {
+      document.getElementById('cardForm').reset();
+      notesEl.value = '';
+      Array.from(setsEl.options).forEach(o => o.selected = false);
+      setsEl.selectedIndex = -1;
+    }
+  });
+  cardModalEl.addEventListener('hidden.bs.modal', () => {
+    Array.from(setsEl.options).forEach(o => o.selected = false);
+    setsEl.selectedIndex = -1;
+  });
+
+  // -----------------------
+  // Render cards
+  function renderCards() {
+    cardsGrid.innerHTML = '';
+    cards.forEach((card, index) => {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+      col.innerHTML = `
+      <div class="card h-100" data-index="${index}">
+        <div class="card-body">
+          <div class="small text-muted">Spanish</div>
+          <h5 class="card-title mb-1">${card.spanish_text}</h5>
+          <div class="small text-muted">English</div>
+          <p class="card-text mb-2">${card.english_text}</p>
+          ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
+          <div class="d-flex flex-wrap gap-1 mb-2">
+            ${card.sets?.length ? card.sets.map(s => `<span class="badge text-bg-light">${s}</span>`).join('') : ''}
+          </div>
+          <div class="d-flex justify-content-between">
+            <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
+            <button class="btn btn-sm btn-outline-danger ms-1" data-action="removeFromSet" data-card-id="${card.id}">&minus;</button>
+          </div>
+        </div>
+      </div>`;
+      cardsGrid.appendChild(col);
+    });
+  }
+
+  // -----------------------
+  // Submit handler
+  document.getElementById('cardForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const es = document.getElementById('esText').value.trim();
+    const en = document.getElementById('enText').value.trim();
+    const notes = notesEl.value.trim();
+    const sets = getSelectedSets();
+    if (!es || !en) return;
+    try {
+      let response, data;
+      if (editingCardId) {
+        response = await fetch(`/cards/edit/${editingCardId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ english_text: en, spanish_text: es, notes })
+        });
+        data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to update card');
+        cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes, sets };
+      } else {
+        response = await fetch('/cards/new', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ english_text: en, spanish_text: es, notes })
+        });
+        data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to create card');
+        cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes, sets });
+      }
+      renderCards();
+      (bootstrap.Modal.getInstance(cardModalEl) || new bootstrap.Modal(cardModalEl)).hide();
+      new bootstrap.Toast(document.getElementById('appToast')).show();
+      e.target.reset();
+      setSelectedSets([]);
+      editIndex = null;
+      editingCardId = null;
+    } catch (err) { console.error(err); alert(err.message); }
+  });
+
+  // -----------------------
+  // Row actions
+  let pendingDeleteIndex = null;
+  let pendingRemoveCardId = null;
+
+  cardsGrid.addEventListener('click', async e => {
+    const index = e.target.closest('[data-index]')?.dataset.index;
+    if (index !== undefined) {
+      if (e.target.dataset.action === 'deleteCard') {
+        pendingDeleteIndex = Number(index);
+        new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+      }
+      if (e.target.dataset.action === 'editCard') {
+        editIndex = Number(index);
+        editingCardId = cards[editIndex].id;
+        document.getElementById('esText').value = cards[editIndex].spanish_text;
+        document.getElementById('enText').value = cards[editIndex].english_text;
+        notesEl.value = cards[editIndex].notes || '';
+        setSelectedSets(cards[editIndex].sets || []);
+        new bootstrap.Modal(cardModalEl).show();
+      }
+        // REMOVE FROM SET (opens modal)
+        if (e.target.dataset.action === "removeFromSet") {
+            pendingRemoveCardId = e.target.dataset.cardId;
+
+            const removeModal = new bootstrap.Modal(
+                document.getElementById("removeConfirmModal")
+            );
+            removeModal.show();
+        }
+
+    }
+  });
+
+  // -----------------------
+  // Confirm delete modal
+  document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+    if (pendingDeleteIndex === null) return;
+    const cardId = cards[pendingDeleteIndex].id;
+    try {
+      const response = await fetch(`/cards/delete/${cardId}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to delete card');
+      cards.splice(pendingDeleteIndex, 1);
+      renderCards();
+    } catch (err) { console.error(err); alert(err.message); }
+    finally {
+      pendingDeleteIndex = null;
+      bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+    }
+  });
+
+
+// -----------------------
+  // Confirm remove modal
+document.getElementById("confirmRemoveBtn").addEventListener("click", () => {
+  if (!pendingRemoveCardId) return;
+
+  fetch(`/sets/delete_card/${currentSetId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ card_id: pendingRemoveCardId })
+  })
+    .then(res => res.json())
+    .then(resp => {
+      if (resp.error) throw new Error(resp.error);
+
+      cards = cards.filter(c => c.id != pendingRemoveCardId);
+      renderCards();
+
+      bootstrap.Modal.getInstance(
+        document.getElementById("removeConfirmModal")
+      ).hide();
+    })
+    .catch(err => {
+      console.error(err);
+      alert(err.message || "Failed to remove card from set");
+    })
+    .finally(() => {
+      pendingRemoveCardId = null;
+    });
+});
+
+
+  // -----------------------
+  // Initial render
+  renderCards();
+
+  // -----------------------
+  // Search filter
+  const searchInput = document.getElementById('searchCards');
+  searchInput.addEventListener('input', () => {
+    const term = searchInput.value.toLowerCase();
+    document.querySelectorAll('#cardsGrid .card').forEach(card => {
+      card.parentElement.style.display = card.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  });
+
+  // -----------------------
+  // Auto translate
+  document.getElementById("autoTranslateBtn").addEventListener("click", async () => {
+    const direction = document.getElementById("translateDirection").value;
+    let text = direction === "english_to_spanish" ? document.getElementById("enText").value.trim() : document.getElementById("esText").value.trim();
+    if (!text) return alert("Text must be present to translate.");
+    try {
+      const response = await fetch("/cards/auto-translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, direction })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unknown error");
+      if (direction === "english_to_spanish") document.getElementById("esText").value = data.translated_text;
+      else document.getElementById("enText").value = data.translated_text;
+    } catch (err) { console.error(err); alert("Network error during translation."); }
+  });
+  </script>
+
+</main>
+{% endblock %}

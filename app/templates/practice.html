@@ -103,6 +103,7 @@ let sets = JSON.parse(document.getElementById('sets-data').textContent);
 
 // catch dropdown
 const practiceSetSelect = document.getElementById("practiceSet");
+practiceSetSelect.querySelectorAll("option:not([value='all'])").forEach(opt => opt.remove());
 
 // populate w sets
 function populateSetDropdown() {

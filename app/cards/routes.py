@@ -11,18 +11,20 @@ LECTO_API_URL = "https://lecto-translation.p.rapidapi.com/v1/translate/text"
 RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")  
 LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 
-
 @login_required
 @cards_bp.route("/")
 def cards_home():
-    user_id = None
-    if current_user:
-         user_id = current_user.id
+    user_id = current_user.id if current_user else None
 
-    # retrieve all cards for user, pass in jinja html, render on frontend
+    
     cards = db.session.query(Card).filter_by(user_id=user_id).order_by(Card.created_at.desc()).all()
-    cards_data = [
-        {
+
+    cards_data = []
+    for card in cards:
+        # set membershsip
+        sets_info = [{"id": s.id, "name": s.name} for s in card.sets]
+
+        cards_data.append({
             "id": card.id,
             "english_text": card.english_text,
             "spanish_text": card.spanish_text,
@@ -30,12 +32,12 @@ def cards_home():
             "is_starred": card.is_starred,
             "created_at": card.created_at.isoformat(),
             "updated_at": card.updated_at.isoformat(),
-            # don't include sets for now
-        }
-        for card in cards
-    ]
+            "sets": [s["name"] for s in sets_info],    
+            "set_ids": [s["id"] for s in sets_info]    
+        })
 
     return render_template("cards.html", cards=cards_data)
+
 
          
 
