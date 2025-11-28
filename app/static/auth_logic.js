@@ -55,7 +55,7 @@
   function syncAccountUI() {
     clearError();
     const loggedIn = !!currentUser;
-    const accountNav = document.querySelector('.nav-link[href="#tab-account"]');
+    const accountNav = document.getElementById('nav-account-link');
 
     if (loggedIn) {
       // Show account info card
