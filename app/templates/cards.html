@@ -181,7 +181,6 @@ let editingCardId = null; // Track the backend card ID when editing
 
 // Refs for optional notes + the sets <select multiple>
 const notesEl = document.getElementById('notes');
-const setsEl  = document.getElementById('cardSets');
 
 /* ****************************************************
 * C) ADD/EDIT MODAL LIFECYCLE
@@ -257,7 +256,7 @@ function renderCards() {
         cardsGrid.appendChild(col);
     });
 
-    document.getElementById("cardCount").textContent = `(${cards.length} card${cards.length === 1 ? '' : 's'});
+  document.getElementById("cardCount").textContent = `(${cards.length} card${cards.length === 1 ? '' : 's'})`;
 }
 
 /* ****************************************************
@@ -324,7 +323,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
             data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to update card');
 
-            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes };
+            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes, sets };
         } else {
             response = await fetch('/cards/new', {
                 method: 'POST',
@@ -334,7 +333,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
             data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to create card');
 
-            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes });
+            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes, sets});
         }
 
         renderCards();
