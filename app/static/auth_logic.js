@@ -1,3 +1,12 @@
+// Simple auth: localStorage-backed user list + current user
+let users = JSON.parse(localStorage.getItem('lemmaticaUsers') || '[]');
+let currentUser = null;
+
+const storedEmail = localStorage.getItem('lemmaticaCurrentUserEmail');
+if (storedEmail) {
+currentUser = users.find(u => u.email === storedEmail) || null;
+}
+
 // Account DOM
   const accountLoggedOut   = document.getElementById('accountLoggedOut');
   const accountRegister    = document.getElementById('accountRegister');
@@ -153,3 +162,5 @@
     e.preventDefault();
     setCurrentUser(null);
   });
+
+    syncAccountUI(); // reflect login state on load

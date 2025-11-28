@@ -71,15 +71,6 @@
 
 
     <script>
-      // Simple auth: localStorage-backed user list + current user
-      let users = JSON.parse(localStorage.getItem('lemmaticaUsers') || '[]');
-      let currentUser = null;
-
-      const storedEmail = localStorage.getItem('lemmaticaCurrentUserEmail');
-      if (storedEmail) {
-        currentUser = users.find(u => u.email === storedEmail) || null;
-      }
-
       /* =========================================================
       J) INITIAL LOAD (PRODUCTION)
       ========================================================= */
@@ -89,11 +80,10 @@
       // 2) Render the sets list
       // 3) Render all cards
       // 4) Sync account info
-      
+
       userSets.forEach(name => addSetOption(name));
       renderUserSets();
       renderCards();
-      syncAccountUI(); // reflect login state on load
     </script>
   </body>
 </html>
