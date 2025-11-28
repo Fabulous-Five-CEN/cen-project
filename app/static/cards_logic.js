@@ -110,21 +110,34 @@
           body.appendChild(badges);
         }
 
-        const row = document.createElement('div');
-        row.className = 'd-flex justify-content-between';
+        const btnColumn = document.createElement('div');
+        btnColumn.className = 'd-flex flex-column gap-1';
+        btnColumn.style.cssText = 'position:absolute; top:8px; right:8px;';
 
+        // Edit button
         const edit = document.createElement('button');
-        edit.className = 'btn btn-sm btn-outline-primary';
+        edit.className = 'btn btn-sm btn-outline-primary rounded-circle';
         edit.dataset.action = 'editCard';
-        edit.textContent = 'Edit';
+        edit.style.cssText = 'width:30px; height:30px; padding:0;';
+        edit.innerHTML = '<i class="fa-solid fa-pencil"></i>';
 
+        // Assign to sets button
+        const assignSets = document.createElement('button');
+        assignSets.className = 'btn btn-sm btn-outline-success rounded-circle';
+        assignSets.dataset.action = 'assignSets';
+        assignSets.style.cssText = 'width:30px; height:30px; padding:0;';
+        assignSets.innerHTML = '<i class="fa-solid fa-layer-group"></i>'; 
+
+        // Delete button
         const del = document.createElement('button');
-        del.className = 'btn btn-sm btn-outline-danger';
+        del.className = 'btn btn-sm btn-outline-danger rounded-circle';
         del.dataset.action = 'deleteCard';
-        del.textContent = 'Delete';
+        del.style.cssText = 'width:30px; height:30px; padding:0;';
+        del.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
 
-        row.append(edit, del);
-        body.appendChild(row);
+        btnColumn.append(edit, assignSets, del);
+
+        wrapper.appendChild(btnColumn)
 
         wrapper.appendChild(body);
         col.appendChild(wrapper);

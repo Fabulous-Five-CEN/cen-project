@@ -57,9 +57,9 @@
               <textarea class="form-control" id="enText" rows="3" required></textarea>
             </div>
 
-            <!-- Auto Translate: Separate Call -->
+            <!-- Auto-translate: Separate Call -->
           <div class="col-md-12">
-            <label class="form-label">Auto Translate</label>
+            <label class="form-label">Auto-translate</label>
 
             <div class="d-flex gap-2">
               <select id="translateDirection" class="form-select w-auto">
@@ -68,7 +68,7 @@
               </select>
 
               <button type="button" id="autoTranslateBtn" class="btn btn-primary">
-                <i class="bi bi-gear-fill"></i> Auto Translate
+                <i class="bi bi-gear-fill"></i> Auto-translate
               </button>
             </div>
           </div>
@@ -181,21 +181,6 @@ let editingCardId = null; // Track the backend card ID when editing
 
 // Refs for optional notes + the sets <select multiple>
 const notesEl = document.getElementById('notes');
-const setsEl  = document.getElementById('cardSets');
-
-/* ****************************************************
-* B) SETS HELPERS (placeholder only)
-* - getSelectedSets(): read selected set IDs (ignore placeholder)
-* - setSelectedSets(values): preselect given set IDs on edit
-* **************************************************** */
-function getSelectedSets() {
-    return Array.from(setsEl.options)
-        .filter(o => o.selected && o.value)
-        .map(o => o.value);
-}
-function setSelectedSets(values = []) {
-    Array.from(setsEl.options).forEach(o => { o.selected = values.includes(o.value); });
-}
 
 /* ****************************************************
 * C) ADD/EDIT MODAL LIFECYCLE
@@ -214,14 +199,8 @@ cardModalEl.addEventListener('show.bs.modal', () => {
         const form = document.getElementById('cardForm');
         form.reset();
         notesEl.value = '';
-        Array.from(setsEl.options).forEach(o => { o.selected = false; });
-        setsEl.selectedIndex = -1;
-    }
-});
 
-cardModalEl.addEventListener('hidden.bs.modal', () => {
-    Array.from(setsEl.options).forEach(o => { o.selected = false; });
-    setsEl.selectedIndex = -1;
+    }
 });
 
 /* ****************************************************
@@ -234,39 +213,50 @@ function renderCards() {
         col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
         col.innerHTML = `
         <div class="card h-100" data-index="${index}">
-          <button class="btn rounded-circle btn-success"
-        data-action="assignSets"
-        style="position:absolute; top:8px; right:8px; width:30px; height:30px; padding:0;">
-          +
-        </button>
+    
+          <div class="d-flex flex-column gap-1" style="position:absolute; top:8px; right:8px;">
+              
+              <button class="btn btn-sm btn-primary rounded-circle" 
+                  data-action="editCard" 
+                  style="width:30px; height:30px; padding:0;">
+                  <i class="fa-solid fa-pencil"></i>
+              </button>
 
-            <div class="card-body d-flex flex-column">
-                <div class="small text-muted">Spanish</div>
-                <h5 class="card-title mb-1">${card.spanish_text}</h5>
+              <button class="btn btn-sm btn-success rounded-circle"
+                  data-action="assignSets"
+                  style="width:30px; height:30px; padding:0;">
+                  <i class="fa-solid fa-layer-group"></i> </button>
 
-                <div class="small text-muted">English</div>
-                <p class="card-text mb-2">${card.english_text}</p>
+              <button class="btn btn-sm btn-danger rounded-circle" 
+                  data-action="deleteCard" 
+                  style="width:30px; height:30px; padding:0;">
+                  <i class="fa-solid fa-trash-can"></i>
+              </button>
+          </div>
+          
+          <div class="card-body d-flex flex-column">
+              <div class="small text-muted">Spanish</div>
+              <h5 class="card-title mb-1">${card.spanish_text}</h5>
 
-                ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
+              <div class="small text-muted">English</div>
+              <p class="card-text mb-2">${card.english_text}</p>
 
-                ${
-                    card.sets?.length
-                    ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
-                        card.sets.map(sName => `<span class="badge text-bg-light">${sName}</span>`).join('') +
-                        `</div>`
-                    : ``
-                }
+              ${card.notes ? `<p class="text-muted small mb-2">${card.notes}</p>` : ``}
 
-                <div class="d-flex justify-content-between mt-auto">
-                    <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
-                </div>
-            </div>
+              ${
+                  card.sets?.length
+                  ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
+                      card.sets.map(sName => `<span class="badge text-bg-light">${sName}</span>`).join('') +
+                      `</div>`
+                  : ``
+              }
+
+              </div>
         </div>`;
         cardsGrid.appendChild(col);
     });
 
-    document.getElementById("cardCount").textContent = `(${cards.length} cards)`;
+  document.getElementById("cardCount").textContent = `(${cards.length} card${cards.length === 1 ? '' : 's'})`;
 }
 
 /* ****************************************************
@@ -319,7 +309,6 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
     const es    = document.getElementById('esText').value.trim();
     const en    = document.getElementById('enText').value.trim();
     const notes = notesEl.value.trim();
-    const sets  = getSelectedSets();
 
     if (!es || !en) return;
 
@@ -334,7 +323,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
             data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to update card');
 
-            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes, sets };
+            cards[editIndex] = { ...cards[editIndex], spanish_text: es, english_text: en, notes };
         } else {
             response = await fetch('/cards/new', {
                 method: 'POST',
@@ -344,7 +333,7 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
             data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to create card');
 
-            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes, sets });
+            cards.unshift({ id: data.card.id, spanish_text: es, english_text: en, notes, sets : []});
         }
 
         renderCards();
@@ -355,7 +344,6 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
         new bootstrap.Toast(document.getElementById('appToast')).show();
 
         e.target.reset();
-        setSelectedSets([]);
         editIndex = null;
         editingCardId = null;
 
@@ -369,41 +357,49 @@ document.getElementById('cardForm').addEventListener('submit', async (e) => {
 * F) ROW ACTIONS: DELETE / EDIT
 * **************************************************** */
 
-let deleteIndex = null;
+let pendingDeleteIndex = null;
 
 cardsGrid.addEventListener('click', async (e) => {
-    const index = e.target.closest('[data-index]')?.dataset.index;
-    if (index === undefined) return;
+    
+    const actionButton = e.target.closest('button[data-action]');
+    if (!actionButton) return;
 
-    if (e.target.dataset.action === 'deleteCard') {
-        pendingDeleteIndex = Number(index);
+    const action = actionButton.dataset.action;
+    
+    const cardElement = actionButton.closest('[data-index]');
+    const index = cardElement?.dataset.index;
+    if (index === undefined) return;
+    
+    const idx = Number(index);
+        
+    if (action === 'deleteCard') {
+        pendingDeleteIndex = idx;
         const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         deleteModal.show();
     }
 
-    if (e.target.dataset.action === 'editCard') {
-        editIndex = Number(index);
+    if (action === 'editCard') {
+        editIndex = idx;
         editingCardId = cards[editIndex].id;
 
         document.getElementById('esText').value = cards[editIndex].spanish_text || '';
         document.getElementById('enText').value = cards[editIndex].english_text || '';
         notesEl.value = cards[editIndex].notes || '';
-        setSelectedSets(cards[editIndex].sets || []);
 
         const modal = new bootstrap.Modal(document.getElementById('cardModal'));
         modal.show();
     }
-    if (e.target.dataset.action === "assignSets") {
-    assignCardIndex = Number(index);
-    assignCardId = cards[assignCardIndex].id;
+    
+    if (action === "assignSets") {
+        assignCardIndex = idx;
+        assignCardId = cards[assignCardIndex].id;
 
-    const selected = cards[assignCardIndex].set_ids || [];
+        const selected = cards[assignCardIndex].set_ids || [];
 
-    loadAssignSets(selected);
+        loadAssignSets(selected);
 
-    new bootstrap.Modal(assignModalEl).show();
-  }
-
+        new bootstrap.Modal(assignModalEl).show();
+    }
 });
 
   document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
