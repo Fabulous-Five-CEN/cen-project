@@ -20,8 +20,8 @@ def serialize_set(set_obj):
     }
 
 
-@login_required
 @practice_bp.route("/")
+@login_required
 def practice_home():
     user_id = current_user.id
     user = db.session.get(User, user_id)
@@ -32,9 +32,9 @@ def practice_home():
     sets = [serialize_set(s) for s in all_sets]
     return render_template("practice.html", sets=sets)  
 
-@login_required
 @practice_bp.route("/set", defaults={"set_id": None})
 @practice_bp.route("/set/<int:set_id>")
+@login_required
 def practice(set_id):
     """Gets set associated with the set_id and user_id"""
     user_id = current_user.id

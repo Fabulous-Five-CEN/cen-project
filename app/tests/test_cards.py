@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from sqlalchemy.pool import StaticPool
+from werkzeug.security import generate_password_hash
 
 from app import create_app, db
 from app.models import Card, User
@@ -24,18 +25,27 @@ class CardRouteTests(unittest.TestCase):
         db.create_all()
         self.client = self.app.test_client()
 
+        self.password = "Password123!"
         self.user = User(
             email="tester@example.com",
-            password_hash="hashed-password",
+            password_hash=generate_password_hash(self.password),
             display_name="Tester",
         )
         db.session.add(self.user)
         db.session.commit()
 
+        self._login()
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
+
+    def _login(self):
+        self.client.post(
+            "/auth/login",
+            json={"email": self.user.email, "password": self.password},
+        )
 
     def _create_card(self, english_text="dog", spanish_text="el perro", notes=""):
         card = Card(
@@ -63,35 +73,32 @@ class CardRouteTests(unittest.TestCase):
             "spanish_text": "la manzana",
             "notes": "basic food",
             "is_starred": False,
-            "user_id": self.user.id,
         }
         resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.get_json()["card"]["english_text"], "apple")
+        self.assertEqual(resp.get_json()["card"]["user_id"], self.user.id)
 
     def test_create_card_missing_english(self):
-        payload = {"spanish_text": "perro", "user_id": self.user.id}
+        payload = {"spanish_text": "perro"}
         resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
     def test_create_card_missing_spanish(self):
-        payload = {"english_text": "dog", "user_id": self.user.id}
+        payload = {"english_text": "dog"}
         resp = self.client.post("/cards/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
-    def test_create_card_missing_user(self):
-        payload = {"english_text": "tree", "spanish_text": "árbol"}
-        resp = self.client.post("/cards/new", json=payload)
-        self.assertEqual(resp.status_code, 400)
-
-    def test_create_card_invalid_user(self):
+    def test_create_card_ignores_payload_user_id(self):
         payload = {
             "english_text": "cat",
             "spanish_text": "el gato",
-            "user_id": self.user.id + 999,
+            "user_id": self.user.id + 50,
         }
         resp = self.client.post("/cards/new", json=payload)
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 201)
+        body = resp.get_json()
+        self.assertEqual(body["card"]["user_id"], self.user.id)
 
     @patch("app.cards.routes.requests.post")
     def test_auto_translate_en_to_es(self, mock_post):

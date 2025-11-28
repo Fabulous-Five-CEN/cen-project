@@ -42,8 +42,8 @@ jobs:
       - run:
           name: Seed database fixtures
           command: |
-            docker compose exec -T web python -m app.scripts.test_seed_users
-            docker compose exec -T web python -m app.scripts.seed_cards
+            docker compose exec -T web python -m unittest app.scripts.test_seed_users
+            docker compose exec -T web python -m unittest app.scripts.seed_cards
       - run:
           name: Wait for application to become healthy
           command: |
@@ -57,6 +57,11 @@ jobs:
             docker compose logs
             echo "Application failed to start" >&2
             exit 1
+      - run:
+          name: Run HTTP seeding scripts
+          command: |
+            docker compose exec -T web python -m unittest app.scripts.seed_sets
+            docker compose exec -T web python -m unittest app.scripts.see_sets
       - run:
           name: Tear down Docker services
           command: docker compose down -v

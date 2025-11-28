@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify, redirect, request, url_for
 from .extensions import db, login_manager
 from .models import orm_objects
 from .models.orm_objects import User
@@ -45,3 +45,15 @@ def load_user(user_id):
     if not user_id:
         return None
     return db.session.get(User, int(user_id))
+
+
+@login_manager.unauthorized_handler
+def handle_unauthorized():
+    login_url = url_for("auth.login", next=request.url)
+    prefers_json = request.is_json or (
+        request.accept_mimetypes["application/json"]
+        >= request.accept_mimetypes["text/html"]
+    )
+    if prefers_json:
+        return jsonify({"error": "Authentication required", "redirect": login_url}), 401
+    return redirect(login_url)

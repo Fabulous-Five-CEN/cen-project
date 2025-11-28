@@ -5,8 +5,8 @@ from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
 from flask_login import login_required, current_user
 
-@login_required
 @sets_bp.route("/")
+@login_required
 def sets_home():
     user_id = current_user.id
     user = db.session.get(User, user_id)
@@ -37,8 +37,8 @@ def get_set_or_404(set_id, description=None):
         abort(404, description=description or f"Set with id {set_id} not found")
     return set_obj
 
-@login_required
 @sets_bp.route("/all", methods=["GET"])
+@login_required
 def get_all_sets():
     user_id = current_user.id
 
@@ -56,8 +56,8 @@ def get_all_sets():
     return jsonify([serialize_set(s) for s in sets]), 200
 
 
-@login_required
 @sets_bp.route("/<int:set_id>", methods=["GET"])
+@login_required
 def get_set_details(set_id):
     """Gets details for a single set, including its cards."""
 
@@ -75,8 +75,8 @@ def get_set_details(set_id):
     ]
     return jsonify(set_data), 200
 
-@login_required
 @sets_bp.route("/new", methods=["POST"])
+@login_required
 def new_set():
     data = request.get_json() or {}
     name = data.get("name")
@@ -106,8 +106,8 @@ def new_set():
         db.session.rollback()
         return jsonify({"error": f"Failed to create set: {str(e)}"}), 500
 
-@login_required
 @sets_bp.route("/edit/<int:set_id>", methods=["PUT"])
+@login_required
 def edit_set(set_id):
 
     user_id = current_user.id
@@ -137,8 +137,8 @@ def edit_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to update set: {str(e)}"}), 500
 
-@login_required
 @sets_bp.route("/delete/<int:set_id>", methods=["DELETE"])
+@login_required
 def delete_set(set_id):
 
     user_id = current_user.id
@@ -155,8 +155,8 @@ def delete_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to delete set: {str(e)}"}), 500
 
-@login_required
 @sets_bp.route("/add_card/<int:set_id>", methods=["POST"])
+@login_required
 def add_card_to_set(set_id):
 
     user_id = current_user.id
@@ -193,8 +193,8 @@ def add_card_to_set(set_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to add cards to set: {str(e)}"}), 500
 
-@login_required
 @sets_bp.route("/delete_card/<int:set_id>", methods=["POST"])
+@login_required
 def delete_card_from_set(set_id):
 
     user_id = current_user.id

@@ -1,193 +1,180 @@
-// Simple auth: localStorage-backed user list + current user
-let users = JSON.parse(localStorage.getItem('lemmaticaUsers') || '[]');
-let currentUser = null;
+const accountLoggedOut = document.getElementById("accountLoggedOut");
+const accountRegister = document.getElementById("accountRegister");
+const accountInfo = document.getElementById("accountInfo");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const logoutBtn = document.getElementById("logoutBtn");
+const switchToRegister = document.getElementById("switchToRegister");
+const switchToLogin = document.getElementById("switchToLogin");
+const authError = document.getElementById("authError");
+const infoEmailEl = document.getElementById("infoEmail");
+const infoUsernameEl = document.getElementById("infoUsername");
+const infoJoinedEl = document.getElementById("infoJoined");
 
-const storedEmail = localStorage.getItem('lemmaticaCurrentUserEmail');
-if (storedEmail) {
-currentUser = users.find(u => u.email === storedEmail) || null;
+let currentUser = window.currentUser || null;
+const urlParams = new URLSearchParams(window.location.search);
+const nextParam = urlParams.get("next");
+
+function showError(msg) {
+  if (!authError) return;
+  authError.textContent = msg;
+  authError.classList.remove("d-none");
 }
 
-// Account DOM
-  const accountLoggedOut   = document.getElementById('accountLoggedOut');
-  const accountRegister    = document.getElementById('accountRegister');
-  const accountInfo        = document.getElementById('accountInfo');
-  const loginForm          = document.getElementById('loginForm');
-  const registerForm       = document.getElementById('registerForm');
-  const logoutBtn          = document.getElementById('logoutBtn');
-  const switchToRegister   = document.getElementById('switchToRegister');
-  const switchToLogin      = document.getElementById('switchToLogin');
-  const authError          = document.getElementById('authError');
-  const infoEmailEl        = document.getElementById('infoEmail');
-  const infoUsernameEl     = document.getElementById('infoUsername');
-  const infoJoinedEl       = document.getElementById('infoJoined');
+function clearError() {
+  if (!authError) return;
+  authError.textContent = "";
+  authError.classList.add("d-none");
+}
 
-  /* =========================================================
-    B2) ACCOUNT / AUTH HELPERS
-    ========================================================= */
+function formatDate(value) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleDateString();
+}
 
-  function saveUsers() {
-    localStorage.setItem('lemmaticaUsers', JSON.stringify(users));
-  }
+function syncAccountUI() {
+  clearError();
+  const loggedIn = !!currentUser;
+  const accountNav = document.getElementById("nav-account-link");
 
-  function showError(msg) {
-    if (!authError) return;
-    authError.textContent = msg;
-    authError.classList.remove('d-none');
-  }
+  if (loggedIn) {
+    accountLoggedOut?.classList.add("d-none");
+    accountRegister?.classList.add("d-none");
+    accountInfo?.classList.remove("d-none");
 
-  function clearError() {
-    if (!authError) return;
-    authError.textContent = '';
-    authError.classList.add('d-none');
-  }
+    if (infoEmailEl) infoEmailEl.textContent = currentUser.email || "";
+    if (infoUsernameEl) infoUsernameEl.textContent = currentUser.display_name || "";
+    if (infoJoinedEl) infoJoinedEl.textContent = formatDate(currentUser.created_at);
 
-  function setCurrentUser(user) {
-    currentUser = user;
-    if (user) {
-      localStorage.setItem('lemmaticaCurrentUserEmail', user.email);
-    } else {
-      localStorage.removeItem('lemmaticaCurrentUserEmail');
+    if (accountNav) {
+      const label = currentUser.display_name || currentUser.email || "Account";
+      accountNav.textContent = `Signed in as ${label}`;
     }
-    syncAccountUI();
-  }
+  } else {
+    accountLoggedOut?.classList.remove("d-none");
+    accountRegister?.classList.add("d-none");
+    accountInfo?.classList.add("d-none");
 
-  // <<< This is the function you asked to update >>>
-  function syncAccountUI() {
-    clearError();
-    const loggedIn = !!currentUser;
-    const accountNav = document.getElementById('nav-account-link');
-
-    if (loggedIn) {
-      // Show account info card
-      accountLoggedOut.classList.add('d-none');
-      accountRegister.classList.add('d-none');
-      accountInfo.classList.remove('d-none');
-
-      // Fill details
-      infoEmailEl.textContent = currentUser.email;
-      infoUsernameEl.textContent = currentUser.username;
-      infoJoinedEl.textContent = new Date(currentUser.joinedAt).toLocaleDateString();
-
-      // Navbar label: "Signed in as X"
-      if (accountNav) {
-        accountNav.textContent = `Signed in as ${currentUser.username}`;
-      }
-    } else {
-      // Show login form by default
-      accountLoggedOut.classList.remove('d-none');
-      accountRegister.classList.add('d-none');
-      accountInfo.classList.add('d-none');
-
-      // Navbar label back to "Account"
-      if (accountNav) {
-        accountNav.textContent = 'Account';
-      }
+    if (accountNav) {
+      accountNav.textContent = "Account";
     }
   }
-
-/* =========================================================
-  LOGIN (backend POST)
-  ========================================================= */
-
+}
 
 if (loginForm) {
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        if (authError) authError.classList.add("d-none");
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearError();
 
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value.trim();
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
 
-        try {
-            const res = await fetch("/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-                credentials: "same-origin"
-            });
+    try {
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ email, password, next: nextParam }),
+      });
 
-            const data = await res.json();
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Login failed.");
+        return;
+      }
 
-            if (res.ok) {
-                // Success → redirect to backend-specified location
-                window.location.href = data.redirect || "/";
-            } else {
-                if (authError) {
-                    authError.textContent = data.error || "Login failed";
-                    authError.classList.remove("d-none");
-                } else {
-                    alert(data.error || "Login failed");
-                }
-            }
-        } catch (err) {
-            if (authError) {
-                authError.textContent = "Network error, please try again.";
-                authError.classList.remove("d-none");
-            } else {
-                alert("Network error, please try again.");
-            }
-            console.error(err);
-        }
-    });
+      currentUser = data.user || null;
+      window.location.href = data.redirect || "/";
+    } catch (err) {
+      console.error(err);
+      showError("Network error, please try again.");
+    }
+  });
 }
 
+if (registerForm) {
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearError();
 
-  // Register submit
-  if (registerForm) {
-    registerForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      clearError();
+    const email = document.getElementById("regEmail").value.trim().toLowerCase();
+    const displayName = document.getElementById("regUsername").value.trim();
+    const password = document.getElementById("regPassword").value;
+    const confirm = document.getElementById("regConfirm").value;
 
-      const email = document.getElementById('regEmail').value.trim().toLowerCase();
-      const username = document.getElementById('regUsername').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const confirm  = document.getElementById('regConfirm').value;
+    if (!email || !displayName || !password) {
+      showError("Please fill in all fields.");
+      return;
+    }
+    if (password !== confirm) {
+      showError("Passwords do not match.");
+      return;
+    }
 
-      if (!email || !username || !password) {
-        showError('Please fill in all fields.');
+    try {
+      const res = await fetch("/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          email,
+          display_name: displayName,
+          password,
+          next: nextParam,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        showError(data.error || "Registration failed.");
         return;
       }
-      if (password !== confirm) {
-        showError('Passwords do not match.');
-        return;
-      }
-      if (users.some(u => u.email === email)) {
-        showError('An account with that email already exists.');
-        return;
-      }
 
-      const user = {
-        email,
-        username,
-        password,
-        joinedAt: Date.now()
-      };
-      users.push(user);
-      saveUsers();
-      registerForm.reset();
-      setCurrentUser(user);
+      currentUser = data.user || null;
+      window.location.href = data.redirect || "/";
+    } catch (err) {
+      console.error(err);
+      showError("Network error, please try again.");
+    }
+  });
+}
+
+switchToRegister?.addEventListener("click", (e) => {
+  e.preventDefault();
+  clearError();
+  accountLoggedOut?.classList.add("d-none");
+  accountRegister?.classList.remove("d-none");
+});
+
+switchToLogin?.addEventListener("click", (e) => {
+  e.preventDefault();
+  clearError();
+  accountRegister?.classList.add("d-none");
+  accountLoggedOut?.classList.remove("d-none");
+});
+
+logoutBtn?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  clearError();
+
+  try {
+    const res = await fetch("/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
     });
+    if (res.ok) {
+      const data = await res.json();
+      currentUser = null;
+      syncAccountUI();
+      window.location.href = data.redirect || "/auth/login";
+      return;
+    }
+    showError("Logout failed. Please try again.");
+  } catch (err) {
+    console.error(err);
+    showError("Network error, please try again.");
   }
+});
 
-  // Switch between login and register
-  switchToRegister?.addEventListener('click', (e) => {
-    e.preventDefault();
-    clearError();
-    accountLoggedOut.classList.add('d-none');
-    accountRegister.classList.remove('d-none');
-  });
-
-  switchToLogin?.addEventListener('click', (e) => {
-    e.preventDefault();
-    clearError();
-    accountRegister.classList.add('d-none');
-    accountLoggedOut.classList.remove('d-none');
-  });
-
-  // Logout
-  logoutBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    setCurrentUser(null);
-  });
-
-    syncAccountUI(); // reflect login state on load
+syncAccountUI();
