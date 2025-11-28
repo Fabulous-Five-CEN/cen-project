@@ -85,25 +85,52 @@ currentUser = users.find(u => u.email === storedEmail) || null;
     }
   }
 
-  // Login submit
-  if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      clearError();
+/* =========================================================
+  LOGIN (backend POST)
+  ========================================================= */
 
-      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-      const password = document.getElementById('loginPassword').value;
 
-      const user = users.find(u => u.email === email);
-      if (!user || user.password !== password) {
-        showError('Incorrect email or password.');
-        return;
-      }
+if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (authError) authError.classList.add("d-none");
 
-      setCurrentUser(user);
-      loginForm.reset();
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
+
+        try {
+            const res = await fetch("/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+                credentials: "same-origin"
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Success → redirect to backend-specified location
+                window.location.href = data.redirect || "/";
+            } else {
+                if (authError) {
+                    authError.textContent = data.error || "Login failed";
+                    authError.classList.remove("d-none");
+                } else {
+                    alert(data.error || "Login failed");
+                }
+            }
+        } catch (err) {
+            if (authError) {
+                authError.textContent = "Network error, please try again.";
+                authError.classList.remove("d-none");
+            } else {
+                alert("Network error, please try again.");
+            }
+            console.error(err);
+        }
     });
-  }
+}
+
 
   // Register submit
   if (registerForm) {
