@@ -108,3 +108,13 @@
     #searchCards::placeholder {
       color: #9ca3af;
     }
+
+    .btn-outline-magenta {
+      color: #b300ff;
+      border-color: #b300ff;
+    }
+    
+    .btn-outline-magenta:hover {
+      background-color: #b300ff;
+      color: #fff;
+    }

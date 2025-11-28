@@ -41,11 +41,11 @@
   <div class="modal fade" id="practiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
-        <div class="modal-header justify-content-between">
+        <div class="modal-header position-relative d-flex justify-content-between">
           <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Exit</button>
 
           <!-- PRODUCTION: progress + status pills -->
-          <div class="d-flex align-items-center gap-2">
+          <div class="position-absolute top-50 start-50 translate-middle d-flex gap-2">
             <span class="badge text-bg-primary" id="progressPill">0 / 10</span>
             <span class="badge rounded-pill d-none" id="statusPill"></span>
           </div>
@@ -82,7 +82,7 @@
         <!-- PRODUCTION: navigation + spaced-repetition-ish buttons -->
         <div class="modal-footer flex-column flex-md-row justify-content-center gap-2">
           <button class="btn btn-outline-secondary" id="prevBtn">Previous</button>
-          <button class="btn btn-secondary" id="flipBtn">Flip</button>
+          <button class="btn btn-outline-magenta" id="flipBtn">Flip</button>
           <button class="btn btn-outline-primary" id="showAnswerBtn">Show Answer</button>
           <button class="btn btn-outline-success" id="gotItBtn">Got it ✅</button>
           <button class="btn btn-outline-warning" id="learningBtn">Still learning</button>

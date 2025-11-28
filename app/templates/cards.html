@@ -2,11 +2,12 @@
 
 {% block content %}
 <main id="cards-page" class="container py-4 flex-grow-1">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <div>
-      <h4 class="section-title mb-0">All Cards</h4>
+  <div class="mb-2">
+      <h4 class="section-title mb-0">
+        All Cards <span class="fs-5" id="cardCount">(0 cards)</span>
+      </h4>
+
       <div class="section-subtitle">Browse, search, and edit your phrase cards.</div>
-    </div>
   </div>
   
     <div class="d-flex gap-2 align-items-center mb-3">
@@ -259,7 +260,7 @@ function renderCards() {
                     : ``
                 }
 
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between mt-auto">
                     <button class="btn btn-sm btn-outline-primary" data-action="editCard">Edit</button>
                     <button class="btn btn-sm btn-outline-danger" data-action="deleteCard">Delete</button>
                 </div>
@@ -267,6 +268,8 @@ function renderCards() {
         </div>`;
         cardsGrid.appendChild(col);
     });
+
+    document.getElementById("cardCount").textContent = `(${cards.length} cards)`;
 }
 
 /* ****************************************************

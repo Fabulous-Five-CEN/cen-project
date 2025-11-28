@@ -12,7 +12,7 @@
 
   </head>
 
-  <body>
+  <body class="d-flex flex-column min-vh-100">
     {% include 'layout_header.html' %}
 
     {% block content %}{% endblock %}
@@ -67,7 +67,9 @@
     <script src="{{ url_for('static', filename='cards_logic.js') }}"></script> 
     <script src="{{ url_for('static', filename='sets_logic.js') }}"></script> 
     <script src="{{ url_for('static', filename='practice_logic.js') }}"></script>
-<!-- 
+    <script src="{{ url_for('static', filename='auth_logic.js') }}"></script>
+
+
     <script>
       /* =========================================================
       J) INITIAL LOAD (PRODUCTION)
@@ -77,6 +79,8 @@
       // 1) Fill selects with any saved sets
       // 2) Render the sets list
       // 3) Render all cards
+      // 4) Sync account info
+
       userSets.forEach(name => addSetOption(name));
       renderUserSets();
       renderCards();
