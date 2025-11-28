@@ -93,7 +93,41 @@
     </div>
   </div>
 
-  
+  <!-- =====================================================
+     ASSIGN CARD TO SETS MODAL
+     Opens when clicking the green "+" button on a card
+===================================================== -->
+<div class="modal fade" id="assignSetsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form class="modal-content" id="assignSetsForm">
+      <div class="modal-header">
+        <h5 class="modal-title">Assign to Sets</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <p class="text-muted small mb-2">
+          Select which sets this card belongs to:
+        </p>
+
+        <div id="assignSetsContainer"
+             class="border rounded p-2"
+             style="max-height: 220px; overflow-y: auto;">
+        
+        </div>
+          <!-- js populates here -->
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 
   <!-- Popup modal used for Delete. Make sure the user doesn't accidentally delete a card! -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
@@ -142,8 +176,6 @@ const cardsGrid = document.getElementById('cardsGrid');
 // Load initial cards from backend JSON
 let cards = JSON.parse(document.getElementById('cards-data').textContent);
 
-// Add placeholder sets array (we are not managing sets yet)
-cards = cards.map(c => ({ ...c, sets: [] }));
 
 // When not null, we are editing the card at this index
 let editIndex = null;
@@ -204,6 +236,12 @@ function renderCards() {
         col.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
         col.innerHTML = `
         <div class="card h-100" data-index="${index}">
+          <button class="btn btn-sm btn-success"
+        data-action="assignSets"
+        style="position:absolute; top:8px; right:8px;">
+          +
+        </button>
+
             <div class="card-body">
                 <div class="small text-muted">Spanish</div>
                 <h5 class="card-title mb-1">${card.spanish_text}</h5>
@@ -216,7 +254,7 @@ function renderCards() {
                 ${
                     card.sets?.length
                     ? `<div class="d-flex flex-wrap gap-1 mb-2">` +
-                        card.sets.map(s => `<span class="badge text-bg-light">${s}</span>`).join('') +
+                        card.sets.map(sName => `<span class="badge text-bg-light">${sName}</span>`).join('') +
                         `</div>`
                     : ``
                 }
@@ -230,6 +268,47 @@ function renderCards() {
         cardsGrid.appendChild(col);
     });
 }
+
+/* ****************************************************
+* D) RENDER SETS SELECTION
+* **************************************************** */
+const assignModalEl = document.getElementById("assignSetsModal");
+const assignSetsContainer = document.getElementById("assignSetsContainer");
+let assignCardId = null;
+let assignCardIndex = null;
+
+async function loadAssignSets(selectedIds = []) {
+  assignSetsContainer.innerHTML = "<div class='text-muted small'>Loading...</div>";
+
+  const res = await fetch("/sets/all");
+  const sets = await res.json();
+
+  assignSetsContainer.innerHTML = "";
+
+  sets.forEach(s => {
+    const row = document.createElement("div");
+    row.className = "form-check";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "form-check-input";
+    input.id = `assignSet_${s.id}`;
+    input.value = s.id;
+
+    if (selectedIds.includes(s.id)) input.checked = true;
+
+    const label = document.createElement("label");
+    label.className = "form-check-label";
+    label.htmlFor = input.id;
+    label.textContent = s.name;
+
+    row.appendChild(input);
+    row.appendChild(label);
+    assignSetsContainer.appendChild(row);
+  });
+}
+
+
 
 /* ****************************************************
 * E) ADD/EDIT SUBMIT HANDLER
@@ -314,6 +393,17 @@ cardsGrid.addEventListener('click', async (e) => {
         const modal = new bootstrap.Modal(document.getElementById('cardModal'));
         modal.show();
     }
+    if (e.target.dataset.action === "assignSets") {
+    assignCardIndex = Number(index);
+    assignCardId = cards[assignCardIndex].id;
+
+    const selected = cards[assignCardIndex].set_ids || [];
+
+    loadAssignSets(selected);
+
+    new bootstrap.Modal(assignModalEl).show();
+  }
+
 });
 
   document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
@@ -335,6 +425,41 @@ cardsGrid.addEventListener('click', async (e) => {
           bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
       }
   });
+
+  document.getElementById("assignSetsForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (assignCardId === null || assignCardIndex === null) return;
+
+  // Get checked set IDs
+  const selectedSetIds = Array.from(assignSetsContainer.querySelectorAll("input[type=checkbox]:checked"))
+                              .map(chk => Number(chk.value));
+
+  try {
+    const res = await fetch(`/sets/update-membership/${assignCardId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ set_ids: selectedSetIds })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to update card sets");
+
+    // Update local card object
+    cards[assignCardIndex].sets = selectedSetIds.map(id => {
+      const input = document.getElementById(`assignSet_${id}`);
+      return input ? input.nextSibling.textContent : id;
+    });
+    cards[assignCardIndex].set_ids = selectedSetIds;
+
+    renderCards(); // Re-render grid to show updated badges
+
+    bootstrap.Modal.getInstance(assignModalEl).hide();
+
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+});
+
 
 
 /* ****************************************************

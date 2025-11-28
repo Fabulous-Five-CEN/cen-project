@@ -37,21 +37,24 @@ def get_set_or_404(set_id, description=None):
         abort(404, description=description or f"Set with id {set_id} not found")
     return set_obj
 
-# @login_required
-# @sets_bp.route("/all", methods=["GET"])
-# def get_all_sets():
-#     # Check that user is in database
-#     user_id = current_user.id
-#     user = db.session.get(User, user_id)
-#     if not user:
-#         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
-    
-#     """Gets all sets associated with a specific user_id."""
+@login_required
+@sets_bp.route("/all", methods=["GET"])
+def get_all_sets():
+    user_id = current_user.id
 
-#     all_sets = SetTable.query.filter_by(user_id=user_id).order_by(SetTable.created_at.desc()).all()
-#     set_list = [serialize_set(s) for s in all_sets]
-    
-#     return render_template("sets.html", set_list)
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"Error": f"User with id {user_id} is not a registered user"}), 404
+
+    sets = (
+        SetTable.query
+        .filter_by(user_id=user_id)
+        .order_by(SetTable.created_at.desc())
+        .all()
+    )
+
+    return jsonify([serialize_set(s) for s in sets]), 200
+
 
 @login_required
 @sets_bp.route("/<int:set_id>", methods=["GET"])
@@ -248,3 +251,62 @@ def view_set(set_id):
         set_id=set_id,
         cards=user_cards
     )
+
+
+# new set for add card membership on frontend
+
+@sets_bp.route("/update-membership/<int:card_id>", methods=["POST"])
+@login_required
+def update_card_sets(card_id):
+    data = request.get_json() or {}
+    set_ids = data.get("set_ids", [])
+
+    if not isinstance(set_ids, list):
+        return jsonify({"error": "set_ids must be a list"}), 400
+
+    try:
+        set_ids = set(int(sid) for sid in set_ids)
+    except ValueError:
+        return jsonify({"error": "set_ids must be integers"}), 400
+
+    # Get the card
+    card = db.session.get(Card, card_id)
+    if not card or card.user_id != current_user.id:
+        return jsonify({"error": f"No card found with id {card_id}"}), 404
+
+    # All sets belong to the user
+    user_sets = {s.id: s for s in SetTable.query.filter_by(user_id=current_user.id).all()}
+
+    # Current set memberships
+    current_ids = {s.id for s in card.sets}
+
+    # Compute adds/removes
+    to_add = set_ids - current_ids
+    to_remove = current_ids - set_ids
+
+    # Add
+    for sid in to_add:
+        s = user_sets.get(sid)
+        if s:
+            card.sets.append(s)
+
+    # Remove
+    for sid in to_remove:
+        s = user_sets.get(sid)
+        if s and s in card.sets:
+            card.sets.remove(s)
+
+    card.updated_at = datetime.now(timezone.utc)
+
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": "Card set membership updated successfully",
+            "card": {
+                "id": card.id,
+                "set_ids": [s.id for s in card.sets]
+            }
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update sets: {str(e)}"}), 500

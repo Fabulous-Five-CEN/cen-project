@@ -36,7 +36,7 @@ window.practiceSetSelect = document.getElementById('practiceSet');
 
       if (choice !== 'all') {
         const choiceNum = parseInt(choice, 10); 
-        all = all.filter(c => Array.isArray(c.sets) && c.sets.includes(choiceNum));
+          all = all.filter(c => Array.isArray(c.set_ids) && c.set_ids.includes(choiceNum));
       } 
 
       practiceDeck = all;
@@ -231,7 +231,8 @@ window.practiceSetSelect = document.getElementById('practiceSet');
             en: c.english_text,
             notes: c.notes,
             is_starred: c.is_starred,
-            sets: c.set_ids
+            set_ids: c.set_ids,   
+            sets: c.sets_names || [] 
           }));
 
           // build and render
