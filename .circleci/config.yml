@@ -52,7 +52,7 @@ jobs:
           name: Wait for application to become healthy
           command: |
             for i in {1..40}; do
-              if curl -sSf "http://localhost:${APP_PORT}/cards/" > /dev/null; then
+              if curl -sSf "http://localhost:${APP_PORT}/" > /dev/null; then
                 echo "Application is responding"
                 exit 0
               fi
