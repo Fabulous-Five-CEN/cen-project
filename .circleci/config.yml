@@ -44,10 +44,63 @@ jobs:
           name: Build and start Docker services
           command: docker compose up -d --build
       - run:
-          name: Seed database fixtures
+          name: Wait for application to become healthy
           command: |
-            docker compose exec -T web python -m unittest app.scripts.test_seed_users
-            docker compose exec -T web python -m unittest app.scripts.seed_cards
+            for i in {1..40}; do
+              if curl -sSf "http://localhost:${APP_PORT}/" > /dev/null; then
+                echo "Application is responding"
+                exit 0
+              fi
+              sleep 5
+            done
+            docker compose logs
+            echo "Application failed to start" >&2
+            exit 1
+      - run:
+          name: Tear down Docker services
+          command: docker compose down -v
+          when: always
+
+  script-stack:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: medium
+    environment:
+      APP_PORT: 8001
+      DB_PORT: 3306
+      DB_NAME: cen_ci
+      DB_USER: cen_ci_user
+      DB_PASSWORD: cen_ci_password
+      MARIADB_ROOT_PASSWORD: cen_root_password
+      BACKEND_HOST: http://localhost
+      TEST_USER_ID: "2"
+    steps:
+      - checkout
+      - run:
+          name: Recreate docker-compose.yml from DOCKERCOMPOSEFILE
+          command: |
+            if [ -z "${DOCKERCOMPOSEFILE:-}" ]; then
+              echo "DOCKERCOMPOSEFILE environment variable is not set." >&2
+              exit 1
+            fi
+            printf '%s' "$DOCKERCOMPOSEFILE" | base64 --decode > docker-compose.yml
+            ls -l docker-compose.yml
+      - run:
+          name: Ensure cen-project directory exists for Docker context
+          command: |
+            if [ ! -d cen-project ]; then
+              ln -snf . cen-project
+            fi
+      - run:
+          name: Install system dependencies
+          command: |
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends docker-compose-plugin || sudo apt-get install -y docker-compose
+            fi
+      - run:
+          name: Build and start Docker services
+          command: docker compose up -d --build
       - run:
           name: Wait for application to become healthy
           command: |
@@ -62,10 +115,60 @@ jobs:
             echo "Application failed to start" >&2
             exit 1
       - run:
-          name: Run HTTP seeding scripts
+          name: Run seeding scripts via unittest
           command: |
+            docker compose exec -T web python -m unittest app.scripts.test_seed_users
+            docker compose exec -T web python -m unittest app.scripts.seed_cards
             docker compose exec -T web python -m unittest app.scripts.seed_sets
             docker compose exec -T web python -m unittest app.scripts.see_sets
+      - run:
+          name: Tear down Docker services
+          command: docker compose down -v
+          when: always
+
+  unit-tests:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: medium
+    environment:
+      APP_PORT: 8001
+      DB_PORT: 3306
+      DB_NAME: cen_ci
+      DB_USER: cen_ci_user
+      DB_PASSWORD: cen_ci_password
+      MARIADB_ROOT_PASSWORD: cen_root_password
+      BACKEND_HOST: http://localhost
+      TEST_USER_ID: "2"
+    steps:
+      - checkout
+      - run:
+          name: Recreate docker-compose.yml from DOCKERCOMPOSEFILE
+          command: |
+            if [ -z "${DOCKERCOMPOSEFILE:-}" ]; then
+              echo "DOCKERCOMPOSEFILE environment variable is not set." >&2
+              exit 1
+            fi
+            printf '%s' "$DOCKERCOMPOSEFILE" | base64 --decode > docker-compose.yml
+            ls -l docker-compose.yml
+      - run:
+          name: Ensure cen-project directory exists for Docker context
+          command: |
+            if [ ! -d cen-project ]; then
+              ln -snf . cen-project
+            fi
+      - run:
+          name: Install system dependencies
+          command: |
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends docker-compose-plugin || sudo apt-get install -y docker-compose
+            fi
+      - run:
+          name: Build and start Docker services
+          command: docker compose up -d --build
+      - run:
+          name: Run Flask app tests inside container
+          command: docker compose exec -T web python -m unittest discover -s app/tests -v
       - run:
           name: Tear down Docker services
           command: docker compose down -v
@@ -75,3 +178,9 @@ workflows:
   build-and-test:
     jobs:
       - docker-stack
+      - script-stack:
+          requires:
+            - docker-stack
+      - unit-tests:
+          requires:
+            - docker-stack
