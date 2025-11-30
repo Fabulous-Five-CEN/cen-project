@@ -102,7 +102,6 @@ services:
       MARIADB_DATABASE: ${DB_NAME}
       MARIADB_USER: ${DB_USER}
       MARIADB_PASSWORD: ${DB_PASSWORD}
-      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
     volumes:
       - db_data:/var/lib/mysql
     ports:
@@ -122,6 +121,7 @@ services:
       db:
         condition: service_healthy
     environment:
+      APP_ENV: ${APP_ENV:-development}
       SECRET_KEY: ${SECRET_KEY}
       SQLALCHEMY_DATABASE_URI: mysql+pymysql://${DB_USER}:${DB_PASSWORD}@db:3306/${DB_NAME}
       RAPIDAPI_KEY: ${RAPIDAPI_KEY}
@@ -140,7 +140,9 @@ services:
       - ./cen-project/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: unless-stopped
 
+
 volumes:
   db_data:
+
 
 ```
