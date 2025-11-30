@@ -58,6 +58,7 @@ Important: "docker-compose.yml" and ".env" go in an outer directory. So create a
    - `DB_NAME`: Database schema name.
    - `DB_USER` / `DB_PASSWORD`: Application DB credentials.
    - `MARIADB_ROOT_PASSWORD`: MariaDB root password.
+   - `RAPIDAPI_KEY`: Rapid API key.
 
 ### Commands
 
