@@ -97,6 +97,8 @@ let userSets = userSetsScript ? JSON.parse(userSetsScript.textContent) : [];
             card.appendChild(body);
             userSetsList.appendChild(card);
             });
+
+            document.getElementById("setsCount").textContent = `(${userSets.length} set${userSets.length === 1 ? '' : 's'})`;
         }
 
         // PRODUCTION: Handle clicks on the My Sets list (View + Delete + Edit)
