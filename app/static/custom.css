@@ -118,3 +118,8 @@
       background-color: #b300ff;
       color: #fff;
     }
+
+    .btn-fixed-width {
+      min-width: 60px; 
+      text-align: center; 
+    }
