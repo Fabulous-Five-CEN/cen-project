@@ -72,19 +72,19 @@ let userSets = userSetsScript ? JSON.parse(userSetsScript.textContent) : [];
                     </div>
                     <div class="d-flex gap-2">
                 <button
-                    class="btn btn-sm btn-secondary rounded-pill btn-fixed-width"
+                    class="btn btn-sm btn-outline-secondary rounded-pill btn-fixed-width"
                     data-action="editSet"
                     data-set-id="${setObj.id}">
                     Edit
                 </button>
                 <button
-                    class="btn btn-sm btn-primary rounded-pill btn-fixed-width"
+                    class="btn btn-sm btn-outline-primary rounded-pill btn-fixed-width"
                     data-action="viewSet"
                     data-set-id="${setObj.id}">
                     View
                 </button>
                 <button
-                    class="btn btn-sm btn-danger rounded-pill btn-fixed-width"
+                    class="btn btn-sm btn-outline-danger rounded-pill btn-fixed-width"
                     data-action="deleteSet"
                     data-set-id="${setObj.id}">
                     Delete
