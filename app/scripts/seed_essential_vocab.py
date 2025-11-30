@@ -10,7 +10,7 @@ from werkzeug.security import generate_password_hash
 from sqlalchemy import and_
 
 from app import create_app, db
-from app.models import Card, User
+from app.models import Card, User, SetTable
 
 
 PACK_USER_EMAIL = "essential@lemmatica.org"
@@ -585,11 +585,12 @@ def _normalize_entry(entry: dict) -> dict:
     """Trim text, keep category for notes."""
     en = entry["english_text"].strip()
     es = entry["spanish_text"].strip()
-    category = entry.get("category", "").strip()
+    category = (entry.get("category") or "").strip()
+    if not category:
+        raise ValueError(f"Category missing for vocab entry: {en} / {es}")
     notes = entry.get("notes", DEFAULT_NOTES)
-    if category:
-        notes = f"{DEFAULT_NOTES} - {category}"
-    return {"en": en, "es": es, "notes": notes}
+    notes = f"{DEFAULT_NOTES} - {category}"
+    return {"en": en, "es": es, "notes": notes, "category": category}
 
 
 class SeedEssentialVocab(unittest.TestCase):
@@ -627,6 +628,24 @@ class SeedEssentialVocab(unittest.TestCase):
             db.session.add(user)
             db.session.commit()
 
+        # Ensure category sets exist (global sets)
+        categories = sorted({e["category"] for e in entries})
+        self.assertGreaterEqual(len(categories), 1, "At least one category is required.")
+        sets_by_name = {}
+        for cat in categories:
+            set_obj = SetTable.query.filter_by(user_id=None, name=cat).first()
+            if not set_obj:
+                set_obj = SetTable(
+                    name=cat,
+                    description=f"Essential vocabulary: {cat}",
+                    user_id=None,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                db.session.add(set_obj)
+                db.session.flush()
+            sets_by_name[cat] = set_obj
+
         created = 0
         for entry in entries:
             exists = Card.query.filter(
@@ -637,17 +656,28 @@ class SeedEssentialVocab(unittest.TestCase):
                 )
             ).first()
             if exists:
-                continue
-            card = Card(
-                english_text=entry["en"],
-                spanish_text=entry["es"],
-                notes=entry["notes"],
-                user_id=None,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-            )
-            db.session.add(card)
-            created += 1
+                card = exists
+            else:
+                card = Card(
+                    english_text=entry["en"],
+                    spanish_text=entry["es"],
+                    notes=entry["notes"],
+                    user_id=None,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                db.session.add(card)
+                created += 1
+
+            # Attach to category set if not already linked
+            cat = entry["category"]
+            target_set = sets_by_name.get(cat)
+            if target_set and target_set not in card.sets:
+                card.sets.append(target_set)
+            # Remove memberships in other public sets so each card is indexed by its category only
+            for s in list(card.sets):
+                if s.user_id is None and s.name != cat:
+                    card.sets.remove(s)
 
         db.session.commit()
         total = Card.query.filter(Card.user_id.is_(None)).count()

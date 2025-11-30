@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models.orm_objects import Card, User, SetTable, PracticeHistory
 from datetime import datetime, timezone
 from flask_login import login_user, logout_user, login_required, current_user
+from sqlalchemy import or_
 
 
 
@@ -28,7 +29,7 @@ def practice_home():
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
 
-    all_sets = SetTable.query.filter_by(user_id=user_id).all()
+    all_sets = SetTable.query.filter(or_(SetTable.user_id == user_id, SetTable.user_id.is_(None))).all()
     sets = [serialize_set(s) for s in all_sets]
     return render_template("practice.html", sets=sets)  
 
@@ -42,19 +43,22 @@ def practice(set_id):
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
     
-    # check that set_id is a valid set belonging to the user via user_id
+    # check that set_id is a valid set belonging to the user or public
         # retrieve all cards associated with that set
 
     if set_id is not None:
-        set_obj = SetTable.query.filter_by(id=set_id, user_id=user.id).first()
+        set_obj = SetTable.query.filter(
+            SetTable.id == set_id,
+            or_(SetTable.user_id == user.id, SetTable.user_id.is_(None))
+        ).first()
         if not set_obj:
-            return jsonify({"error": f"Set {set_id} not found or does not belong to this user_id"}), 404
+            return jsonify({"error": f"Set {set_id} not found or not accessible to this user"}), 404
         cards = set_obj.cards
     
     else:
     # or if set_id is blank (no json was retrieved, so no set was selected, we assume the user wants to do ALL their cards)
-        # retrieve all cards associated with the user
-        cards = Card.query.filter_by(user_id=user.id).all()
+        # retrieve all cards associated with the user or global
+        cards = Card.query.filter(or_(Card.user_id == user.id, Card.user_id.is_(None))).all()
 
     # create dict object returning all card information to the frontend via json
 
