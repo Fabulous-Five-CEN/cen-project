@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% set logged_in = current_user.is_authenticated %}
 <main id="account-page" class="container py-4 flex-grow-1">
   <div class="mb-3">
     <h4 class="section-title mb-0">Account</h4>
@@ -10,7 +11,7 @@
   <div class="row justify-content-center">
     <div class="col-sm-10 col-md-7 col-lg-5">
       <!-- Logged-out: sign-in form -->
-      <div id="accountLoggedOut" class="card shadow-sm mb-3">
+      <div id="accountLoggedOut" class="card shadow-sm mb-3 {% if logged_in %}d-none{% endif %}">
         <div class="card-body">
           <h5 class="card-title text-center mb-3">Sign in</h5>
           <form id="loginForm" novalidate>
@@ -64,7 +65,7 @@
       </div>
 
       <!-- Logged-in account info -->
-      <div id="accountInfo" class="card shadow-sm mb-3 d-none">
+      <div id="accountInfo" class="card shadow-sm mb-3 {% if not logged_in %}d-none{% endif %}">
         <div class="card-body">
           <h5 class="card-title text-center mb-0">My Account</h5>
         </div>
@@ -74,11 +75,15 @@
         <div class="card-body">
           <dl class="row mt-2 mb-4">
             <dt class="col-4">Email</dt>
-            <dd class="col-8" id="infoEmail"></dd>
+            <dd class="col-8" id="infoEmail">{{ current_user.email if logged_in else "" }}</dd>
             <dt class="col-4">Username</dt>
-            <dd class="col-8" id="infoUsername"></dd>
+            <dd class="col-8" id="infoUsername">{{ current_user.display_name if logged_in else "" }}</dd>
             <dt class="col-4">Joined</dt>
-            <dd class="col-8" id="infoJoined"></dd>
+            <dd class="col-8" id="infoJoined">
+              {% if logged_in %}
+                {{ current_user.created_at.strftime('%b %d, %Y') }}
+              {% endif %}
+            </dd>
           </dl>
           <button id="logoutBtn" class="btn btn-outline-danger w-100">Log out</button>
         </div>

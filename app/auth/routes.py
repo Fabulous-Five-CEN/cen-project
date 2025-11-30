@@ -1,12 +1,17 @@
-from flask import jsonify, render_template, request, flash
-from flask_login import login_user, logout_user, login_required, current_user
+from typing import Optional
+from urllib.parse import urlparse
 
+from flask import jsonify, render_template, request, redirect, url_for
+from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy.exc import IntegrityError
+
+from app.extensions import db
 from app.models import User
 
 from . import auth_bp
 
 
-def _serialize_user(user: User):
+def _serialize_user(user: User) -> dict:
     return {
         "id": user.id,
         "email": user.email,
@@ -14,14 +19,28 @@ def _serialize_user(user: User):
     }
 
 
+def _safe_next_url(candidate: Optional[str]) -> Optional[str]:
+    """Only allow relative next URLs so we do not redirect off-site."""
+    if not candidate:
+        return None
+    parsed = urlparse(candidate)
+    if parsed.netloc or parsed.scheme:
+        return None
+    return candidate
+
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
+        if current_user.is_authenticated:
+            target = _safe_next_url(request.args.get("next")) or url_for("main.dashboard")
+            return redirect(target)
         return render_template("account.html")
 
     data = request.get_json() or {}
-    email = data.get("email")
+    email = (data.get("email") or "").strip().lower()
     password = data.get("password")
+    next_url = _safe_next_url(data.get("next") or request.args.get("next"))
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
@@ -32,19 +51,65 @@ def login():
 
     login_user(user)
 
-    flash("Successful login!", "success")
-    return jsonify({"redirect" : "/"})
+    return (
+        jsonify(
+            {
+                "user": _serialize_user(user),
+                "redirect": next_url or url_for("main.dashboard"),
+            }
+        ),
+        200,
+    )
+
+
+@auth_bp.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        if current_user.is_authenticated:
+            return redirect(url_for("auth.account_home"))
+        return render_template("account.html")
+
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password")
+    display_name = (data.get("display_name") or data.get("username") or "").strip()
+    next_url = _safe_next_url(data.get("next") or request.args.get("next"))
+
+    if not email or not password or not display_name:
+        return jsonify({"error": "Email, display name, and password are required"}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "An account with that email already exists"}), 400
+
+    new_user = User(email=email, display_name=display_name)
+    new_user.set_password(password)
+
+    db.session.add(new_user)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "An account with that email already exists"}), 400
+
+    login_user(new_user)
+
+    return (
+        jsonify(
+            {
+                "user": _serialize_user(new_user),
+                "redirect": next_url or url_for("main.dashboard"),
+            }
+        ),
+        201,
+    )
+
 
 @auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
-    return jsonify({"message": "Logout successful"}), 200
+    return jsonify({"message": "Logout successful", "redirect": url_for("auth.login")}), 200
 
-
-@auth_bp.route("/signup")
-def signup():
-    return jsonify({"page": "Signup"})
 
 @auth_bp.route("/account")
 @login_required

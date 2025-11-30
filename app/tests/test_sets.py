@@ -1,6 +1,7 @@
 import unittest
 
 from sqlalchemy.pool import StaticPool
+from werkzeug.security import generate_password_hash
 
 from app import create_app, db
 from app.models import Card, SetTable, User
@@ -23,18 +24,26 @@ class SetRouteTests(unittest.TestCase):
         db.create_all()
         self.client = self.app.test_client()
 
+        self.password = "Password123!"
         self.user = User(
             email="sets@test.com",
-            password_hash="hashed",
+            password_hash=generate_password_hash(self.password),
             display_name="Set User",
         )
         db.session.add(self.user)
         db.session.commit()
+        self._login()
 
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
+
+    def _login(self):
+        self.client.post(
+            "/auth/login",
+            json={"email": self.user.email, "password": self.password},
+        )
 
     def _create_set_direct(self, name="Test Set", description="temp set"):
         set_obj = SetTable(name=name, description=description, user_id=self.user.id)
@@ -56,14 +65,13 @@ class SetRouteTests(unittest.TestCase):
         payload = {
             "name": "Kitchen Vocabulary",
             "description": "Words for things found in the kitchen.",
-            "user_id": self.user.id,
         }
         resp = self.client.post("/sets/new", json=payload)
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.get_json()["set"]["name"], "Kitchen Vocabulary")
 
     def test_create_set_missing_name_fails(self):
-        payload = {"description": "A set without a name.", "user_id": self.user.id}
+        payload = {"description": "A set without a name."}
         resp = self.client.post("/sets/new", json=payload)
         self.assertEqual(resp.status_code, 400)
 
@@ -89,7 +97,7 @@ class SetRouteTests(unittest.TestCase):
     def test_get_all_sets_for_user(self):
         self._create_set_direct(name="Set One")
         self._create_set_direct(name="Set Two")
-        resp = self.client.get(f"/sets/all?user_id={self.user.id}")
+        resp = self.client.get("/sets/all")
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertIsInstance(data, list)

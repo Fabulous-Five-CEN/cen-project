@@ -3,8 +3,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from sqlalchemy.pool import StaticPool
+from werkzeug.security import generate_password_hash
 
 from app import create_app, db
+from app.models import User
 
 
 class LectoTranslateRouteTests(unittest.TestCase):
@@ -25,10 +27,26 @@ class LectoTranslateRouteTests(unittest.TestCase):
         db.create_all()
         self.client = self.app.test_client()
 
+        self.password = "Password123!"
+        self.user = User(
+            email="lecto@test.com",
+            password_hash=generate_password_hash(self.password),
+            display_name="Lecto User",
+        )
+        db.session.add(self.user)
+        db.session.commit()
+        self._login()
+
     def tearDown(self):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
+
+    def _login(self):
+        self.client.post(
+            "/auth/login",
+            json={"email": self.user.email, "password": self.password},
+        )
 
     def _mock_translation(self, mock_post, translated_text):
         fake_response = MagicMock()

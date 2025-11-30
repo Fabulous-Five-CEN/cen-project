@@ -11,10 +11,10 @@ LECTO_API_URL = "https://lecto-translation.p.rapidapi.com/v1/translate/text"
 RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")  
 LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 
-@login_required
 @cards_bp.route("/")
+@login_required
 def cards_home():
-    user_id = current_user.id if current_user else None
+    user_id = current_user.id
 
     
     cards = db.session.query(Card).filter_by(user_id=user_id).order_by(Card.created_at.desc()).all()
@@ -41,8 +41,8 @@ def cards_home():
 
          
 
-@login_required
 @cards_bp.route("/new", methods=["POST"])
+@login_required
 def new_card():
     data = request.get_json() or {}
 
@@ -57,9 +57,8 @@ def new_card():
     is_starred = data.get('is_starred', False)
 
     # check that mandatory fields are present 
-
-    if not english_text or not spanish_text or not user_id:
-        return jsonify({"error" : "Missing one of these required fields: english_text, spanish_text, user_id"}), 400
+    if not english_text or not spanish_text:
+        return jsonify({"error" : "Missing one of these required fields: english_text, spanish_text"}), 400
 
 
     # Check that user is in database
@@ -96,8 +95,8 @@ def new_card():
         }
     }), 201
 
-@login_required
 @cards_bp.route("/edit/<int:card_id>", methods = ["PUT"])
+@login_required
 def edit_card(card_id):
     user_id = current_user.id
     user = db.session.get(User, user_id)
@@ -146,8 +145,8 @@ def edit_card(card_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to update card: {str(e)}"}), 500
     
-@login_required
 @cards_bp.route("/delete/<int:card_id>", methods = ["DELETE"])
+@login_required
 def delete_card(card_id):
 
     user_id = current_user.id
@@ -168,8 +167,8 @@ def delete_card(card_id):
         return jsonify({"error": f"Failed to delete card: {str(e)}"}), 500
 
 
-@login_required
 @cards_bp.route("/auto-translate", methods=["POST"]) 
+@login_required
 def auto_translate():
     data = request.get_json() or {}
     text = data.get('text')

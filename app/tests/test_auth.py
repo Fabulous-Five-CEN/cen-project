@@ -39,14 +39,18 @@ class AuthRouteTests(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
+    def _login(self, client):
+        return client.post(
+            "/auth/login",
+            json={"email": self.user.email, "password": self.password},
+        )
+
     def test_login_success(self):
         with self.client as client:
-            resp = client.post(
-                "/auth/login",
-                json={"email": self.user.email, "password": self.password},
-            )
+            resp = self._login(client)
             self.assertEqual(resp.status_code, 200)
             data = resp.get_json()
+            self.assertIn("redirect", data)
             self.assertEqual(data["user"]["email"], self.user.email)
 
             with client.session_transaction() as sess:
@@ -64,14 +68,32 @@ class AuthRouteTests(unittest.TestCase):
 
     def test_logout_clears_session(self):
         with self.client as client:
-            client.post(
-                "/auth/login",
-                json={"email": self.user.email, "password": self.password},
-            )
+            self._login(client)
             resp = client.post("/auth/logout")
             self.assertEqual(resp.status_code, 200)
             with client.session_transaction() as sess:
                 self.assertIsNone(sess.get("_user_id"))
+
+    def test_signup_creates_and_logs_in_user(self):
+        with self.client as client:
+            resp = client.post(
+                "/auth/signup",
+                json={
+                    "email": "new@test.com",
+                    "password": "Welcome123!",
+                    "display_name": "New User",
+                },
+            )
+            self.assertEqual(resp.status_code, 201)
+            data = resp.get_json()
+            self.assertEqual(data["user"]["email"], "new@test.com")
+
+            # session should be set for the newly created user
+            with client.session_transaction() as sess:
+                self.assertEqual(
+                    sess.get("_user_id"),
+                    str(User.query.filter_by(email="new@test.com").first().id),
+                )
 
 
 if __name__ == "__main__":
