@@ -214,28 +214,28 @@ function renderCards() {
         col.innerHTML = `
         <div class="card h-100" data-index="${index}">
     
-          <div class="d-flex flex-column gap-1" style="position:absolute; top:8px; right:8px;">
+          <div class="d-flex flex-row gap-1" style="position:absolute; top:8px; right:8px;">
               
               <button class="btn btn-sm btn-primary rounded-circle" 
                   data-action="editCard" 
-                  style="width:34px; height:34px; padding:0;">
+                  style="width:32px; height:32px; padding:0;">
                   <i class="fa-solid fa-pencil"></i>
               </button>
 
               <button class="btn btn-sm btn-success rounded-circle"
                   data-action="assignSets"
-                  style="width:34px; height:34px; padding:0;">
+                  style="width:32px; height:32px; padding:0;">
                   <i class="fa-solid fa-layer-group"></i> </button>
 
               <button class="btn btn-sm btn-danger rounded-circle" 
                   data-action="deleteCard" 
-                  style="width:34px; height:34px; padding:0;">
+                  style="width:32px; height:32px; padding:0;">
                   <i class="fa-solid fa-trash-can"></i>
               </button>
           </div>
           
           <div class="card-body d-flex flex-column">
-              <div class="small text-muted">Spanish</div>
+              <div class="mt-2 small text-muted">Spanish</div>
               <h5 class="card-title mb-1">${card.spanish_text}</h5>
 
               <div class="small text-muted">English</div>
