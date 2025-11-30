@@ -1,6 +1,7 @@
 from flask import jsonify, request, render_template
 from flask_login import current_user, login_required
 import requests
+from sqlalchemy import or_
 from . import cards_bp
 from app import db
 from app.models import Card, User
@@ -16,8 +17,12 @@ LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 def cards_home():
     user_id = current_user.id
 
-    
-    cards = db.session.query(Card).filter_by(user_id=user_id).order_by(Card.created_at.desc()).all()
+    cards = (
+        db.session.query(Card)
+        .filter(or_(Card.user_id == user_id, Card.user_id.is_(None)))
+        .order_by(Card.created_at.desc())
+        .all()
+    )
 
     cards_data = []
     for card in cards:
