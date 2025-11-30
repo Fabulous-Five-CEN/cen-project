@@ -64,7 +64,7 @@ let userSets = userSetsScript ? JSON.parse(userSetsScript.textContent) : [];
                 body.className = 'card-body py-2';
 
                 body.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start">
+                <div class="d-flex justify-content-between align-items-center">
                     <div class="flex-grow-1">
                     <div class="fw-semibold">${name}</div>
                     ${description ? `<div class="small text-muted mt-1">${description}</div>` : ''}
