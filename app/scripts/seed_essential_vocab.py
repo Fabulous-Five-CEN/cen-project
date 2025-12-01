@@ -1,0 +1,689 @@
+"""
+Seeds a curated essential Spanish/English vocabulary pack focused on immigrant and refugee support.
+Run with: python -m unittest app.scripts.seed_essential_vocab
+"""
+
+import unittest
+from datetime import datetime
+
+from werkzeug.security import generate_password_hash
+from sqlalchemy import and_
+
+from app import create_app, db
+from app.models import Card, User, SetTable
+
+
+PACK_USER_EMAIL = "essential@lemmatica.org"
+PACK_USER_NAME = "Essential Vocab Pack"
+DEFAULT_NOTES = "Essential vocabulary for immigrant and refugee support"
+
+# Curated words and phrases grouped by category.
+ESSENTIAL_VOCAB = []
+
+ESSENTIAL_VOCAB += [
+    # Basic needs & daily survival (50)
+    {"english_text": "water", "spanish_text": "agua", "category": "Basic needs"},
+    {"english_text": "drinking water", "spanish_text": "agua potable", "category": "Basic needs"},
+    {"english_text": "food", "spanish_text": "comida", "category": "Basic needs"},
+    {"english_text": "hot meal", "spanish_text": "comida caliente", "category": "Basic needs"},
+    {"english_text": "baby food", "spanish_text": "comida para bebe", "category": "Basic needs"},
+    {"english_text": "baby formula", "spanish_text": "formula para bebe", "category": "Basic needs"},
+    {"english_text": "snack", "spanish_text": "bocadillo", "category": "Basic needs"},
+    {"english_text": "kitchen", "spanish_text": "cocina", "category": "Basic needs"},
+    {"english_text": "stove", "spanish_text": "estufa", "category": "Basic needs"},
+    {"english_text": "microwave", "spanish_text": "microondas", "category": "Basic needs"},
+    {"english_text": "refrigerator", "spanish_text": "refrigerador", "category": "Basic needs"},
+    {"english_text": "bathroom", "spanish_text": "bano", "category": "Basic needs"},
+    {"english_text": "toilet", "spanish_text": "inodoro", "category": "Basic needs"},
+    {"english_text": "shower", "spanish_text": "ducha", "category": "Basic needs"},
+    {"english_text": "sink", "spanish_text": "lavamanos", "category": "Basic needs"},
+    {"english_text": "soap", "spanish_text": "jabon", "category": "Basic needs"},
+    {"english_text": "shampoo", "spanish_text": "champu", "category": "Basic needs"},
+    {"english_text": "toothbrush", "spanish_text": "cepillo de dientes", "category": "Basic needs"},
+    {"english_text": "toothpaste", "spanish_text": "pasta de dientes", "category": "Basic needs"},
+    {"english_text": "towel", "spanish_text": "toalla", "category": "Basic needs"},
+    {"english_text": "blanket", "spanish_text": "manta", "category": "Basic needs"},
+    {"english_text": "pillow", "spanish_text": "almohada", "category": "Basic needs"},
+    {"english_text": "bed", "spanish_text": "cama", "category": "Basic needs"},
+    {"english_text": "mattress", "spanish_text": "colchon", "category": "Basic needs"},
+    {"english_text": "sheet", "spanish_text": "sabana", "category": "Basic needs"},
+    {"english_text": "clothing", "spanish_text": "ropa", "category": "Basic needs"},
+    {"english_text": "winter coat", "spanish_text": "abrigo de invierno", "category": "Basic needs"},
+    {"english_text": "hat", "spanish_text": "gorro", "category": "Basic needs"},
+    {"english_text": "gloves", "spanish_text": "guantes", "category": "Basic needs"},
+    {"english_text": "socks", "spanish_text": "calcetines", "category": "Basic needs"},
+    {"english_text": "shoes", "spanish_text": "zapatos", "category": "Basic needs"},
+    {"english_text": "underwear", "spanish_text": "ropa interior", "category": "Basic needs"},
+    {"english_text": "diapers", "spanish_text": "panales", "category": "Basic needs"},
+    {"english_text": "wipes", "spanish_text": "toallitas", "category": "Basic needs"},
+    {"english_text": "feminine pads", "spanish_text": "toallas femeninas", "category": "Basic needs"},
+    {"english_text": "toilet paper", "spanish_text": "papel higienico", "category": "Basic needs"},
+    {"english_text": "trash bag", "spanish_text": "bolsa de basura", "category": "Basic needs"},
+    {"english_text": "laundry", "spanish_text": "lavanderia", "category": "Basic needs"},
+    {"english_text": "washing machine", "spanish_text": "lavadora", "category": "Basic needs"},
+    {"english_text": "dryer", "spanish_text": "secadora", "category": "Basic needs"},
+    {"english_text": "detergent", "spanish_text": "detergente", "category": "Basic needs"},
+    {"english_text": "disinfectant", "spanish_text": "desinfectante", "category": "Basic needs"},
+    {"english_text": "mask", "spanish_text": "mascarilla", "category": "Basic needs"},
+    {"english_text": "hand sanitizer", "spanish_text": "gel antibacterial", "category": "Basic needs"},
+    {"english_text": "warm clothes", "spanish_text": "ropa abrigada", "category": "Basic needs"},
+    {"english_text": "clean water bottle", "spanish_text": "botella de agua limpia", "category": "Basic needs"},
+    {"english_text": "charger", "spanish_text": "cargador", "category": "Basic needs"},
+    {"english_text": "power outlet", "spanish_text": "enchufe", "category": "Basic needs"},
+    {"english_text": "sleeping bag", "spanish_text": "saco de dormir", "category": "Basic needs"},
+    {"english_text": "tent", "spanish_text": "tienda de campana", "category": "Basic needs"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Health & wellness (50)
+    {"english_text": "doctor", "spanish_text": "medico", "category": "Health"},
+    {"english_text": "nurse", "spanish_text": "enfermera", "category": "Health"},
+    {"english_text": "clinic", "spanish_text": "clinica", "category": "Health"},
+    {"english_text": "hospital", "spanish_text": "hospital", "category": "Health"},
+    {"english_text": "emergency room", "spanish_text": "sala de emergencias", "category": "Health"},
+    {"english_text": "ambulance", "spanish_text": "ambulancia", "category": "Health"},
+    {"english_text": "pharmacy", "spanish_text": "farmacia", "category": "Health"},
+    {"english_text": "medicine", "spanish_text": "medicina", "category": "Health"},
+    {"english_text": "prescription", "spanish_text": "receta", "category": "Health"},
+    {"english_text": "pain", "spanish_text": "dolor", "category": "Health"},
+    {"english_text": "fever", "spanish_text": "fiebre", "category": "Health"},
+    {"english_text": "cough", "spanish_text": "tos", "category": "Health"},
+    {"english_text": "shortness of breath", "spanish_text": "falta de aire", "category": "Health"},
+    {"english_text": "pregnant", "spanish_text": "embarazada", "category": "Health"},
+    {"english_text": "contraception", "spanish_text": "anticoncepcion", "category": "Health"},
+    {"english_text": "prenatal care", "spanish_text": "cuidado prenatal", "category": "Health"},
+    {"english_text": "vaccination", "spanish_text": "vacunacion", "category": "Health"},
+    {"english_text": "vaccine record", "spanish_text": "cartilla de vacunas", "category": "Health"},
+    {"english_text": "blood pressure", "spanish_text": "presion arterial", "category": "Health"},
+    {"english_text": "diabetes", "spanish_text": "diabetes", "category": "Health"},
+    {"english_text": "insulin", "spanish_text": "insulina", "category": "Health"},
+    {"english_text": "allergy", "spanish_text": "alergia", "category": "Health"},
+    {"english_text": "allergic reaction", "spanish_text": "reaccion alergica", "category": "Health"},
+    {"english_text": "asthma", "spanish_text": "asma", "category": "Health"},
+    {"english_text": "inhaler", "spanish_text": "inhalador", "category": "Health"},
+    {"english_text": "mental health", "spanish_text": "salud mental", "category": "Health"},
+    {"english_text": "counselor", "spanish_text": "consejero", "category": "Health"},
+    {"english_text": "therapist", "spanish_text": "terapeuta", "category": "Health"},
+    {"english_text": "depression", "spanish_text": "depresion", "category": "Health"},
+    {"english_text": "anxiety", "spanish_text": "ansiedad", "category": "Health"},
+    {"english_text": "trauma support", "spanish_text": "apoyo por trauma", "category": "Health"},
+    {"english_text": "wheelchair", "spanish_text": "silla de ruedas", "category": "Health"},
+    {"english_text": "crutches", "spanish_text": "muletas", "category": "Health"},
+    {"english_text": "bandage", "spanish_text": "vendaje", "category": "Health"},
+    {"english_text": "first aid", "spanish_text": "primeros auxilios", "category": "Health"},
+    {"english_text": "vision test", "spanish_text": "examen de vista", "category": "Health"},
+    {"english_text": "dental care", "spanish_text": "cuidado dental", "category": "Health"},
+    {"english_text": "toothache", "spanish_text": "dolor de muela", "category": "Health"},
+    {"english_text": "medical appointment", "spanish_text": "cita medica", "category": "Health"},
+    {"english_text": "medical insurance", "spanish_text": "seguro medico", "category": "Health"},
+    {"english_text": "health card", "spanish_text": "tarjeta de salud", "category": "Health"},
+    {"english_text": "urgent care", "spanish_text": "atencion urgente", "category": "Health"},
+    {"english_text": "poison control", "spanish_text": "control de envenenamiento", "category": "Health"},
+    {"english_text": "lab results", "spanish_text": "resultados de laboratorio", "category": "Health"},
+    {"english_text": "blood test", "spanish_text": "analisis de sangre", "category": "Health"},
+    {"english_text": "prenatal vitamins", "spanish_text": "vitaminas prenatales", "category": "Health"},
+    {"english_text": "hearing test", "spanish_text": "examen de oido", "category": "Health"},
+    {"english_text": "follow-up visit", "spanish_text": "cita de seguimiento", "category": "Health"},
+    {"english_text": "medical record", "spanish_text": "expediente medico", "category": "Health"},
+    {"english_text": "referral", "spanish_text": "referencia medica", "category": "Health"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Safety, legal aid, and protection (50)
+    {"english_text": "police", "spanish_text": "policia", "category": "Safety"},
+    {"english_text": "file a report", "spanish_text": "presentar una denuncia", "category": "Safety"},
+    {"english_text": "case number", "spanish_text": "numero de caso", "category": "Safety"},
+    {"english_text": "court", "spanish_text": "tribunal", "category": "Safety"},
+    {"english_text": "judge", "spanish_text": "juez", "category": "Safety"},
+    {"english_text": "court hearing", "spanish_text": "audiencia", "category": "Safety"},
+    {"english_text": "lawyer", "spanish_text": "abogado", "category": "Safety"},
+    {"english_text": "free legal aid", "spanish_text": "ayuda legal gratuita", "category": "Safety"},
+    {"english_text": "public defender", "spanish_text": "defensor publico", "category": "Safety"},
+    {"english_text": "asylum", "spanish_text": "asilo", "category": "Safety"},
+    {"english_text": "refugee status", "spanish_text": "estatus de refugiado", "category": "Safety"},
+    {"english_text": "notice to appear", "spanish_text": "aviso de comparecencia", "category": "Safety"},
+    {"english_text": "immigration court", "spanish_text": "corte de inmigracion", "category": "Safety"},
+    {"english_text": "your rights", "spanish_text": "sus derechos", "category": "Safety"},
+    {"english_text": "workplace rights", "spanish_text": "derechos laborales", "category": "Safety"},
+    {"english_text": "tenant rights", "spanish_text": "derechos del inquilino", "category": "Safety"},
+    {"english_text": "emergency shelter", "spanish_text": "refugio de emergencia", "category": "Safety"},
+    {"english_text": "domestic violence", "spanish_text": "violencia domestica", "category": "Safety"},
+    {"english_text": "safety plan", "spanish_text": "plan de seguridad", "category": "Safety"},
+    {"english_text": "restraining order", "spanish_text": "orden de restriccion", "category": "Safety"},
+    {"english_text": "threat", "spanish_text": "amenaza", "category": "Safety"},
+    {"english_text": "harassment", "spanish_text": "acoso", "category": "Safety"},
+    {"english_text": "human trafficking", "spanish_text": "trata de personas", "category": "Safety"},
+    {"english_text": "hotline", "spanish_text": "linea de ayuda", "category": "Safety"},
+    {"english_text": "crime victim", "spanish_text": "victima de delito", "category": "Safety"},
+    {"english_text": "witness", "spanish_text": "testigo", "category": "Safety"},
+    {"english_text": "detention", "spanish_text": "detencion", "category": "Safety"},
+    {"english_text": "bail", "spanish_text": "fianza", "category": "Safety"},
+    {"english_text": "probation", "spanish_text": "libertad condicional", "category": "Safety"},
+    {"english_text": "parole", "spanish_text": "libertad preparatoria", "category": "Safety"},
+    {"english_text": "emergency contact", "spanish_text": "contacto de emergencia", "category": "Safety"},
+    {"english_text": "translation needed", "spanish_text": "necesito traduccion", "category": "Safety"},
+    {"english_text": "interpreter", "spanish_text": "interprete", "category": "Safety"},
+    {"english_text": "notary", "spanish_text": "notario", "category": "Safety"},
+    {"english_text": "signature", "spanish_text": "firma", "category": "Safety"},
+    {"english_text": "consent form", "spanish_text": "formulario de consentimiento", "category": "Safety"},
+    {"english_text": "complaint", "spanish_text": "queja", "category": "Safety"},
+    {"english_text": "report stolen item", "spanish_text": "reportar objeto robado", "category": "Safety"},
+    {"english_text": "lost child", "spanish_text": "nino perdido", "category": "Safety"},
+    {"english_text": "missing person", "spanish_text": "persona desaparecida", "category": "Safety"},
+    {"english_text": "evacuation", "spanish_text": "evacuacion", "category": "Safety"},
+    {"english_text": "emergency exit", "spanish_text": "salida de emergencia", "category": "Safety"},
+    {"english_text": "fire drill", "spanish_text": "simulacro de incendio", "category": "Safety"},
+    {"english_text": "shelter in place", "spanish_text": "refugiarse en el lugar", "category": "Safety"},
+    {"english_text": "curfew", "spanish_text": "toque de queda", "category": "Safety"},
+    {"english_text": "safe place", "spanish_text": "lugar seguro", "category": "Safety"},
+    {"english_text": "danger", "spanish_text": "peligro", "category": "Safety"},
+    {"english_text": "call emergency", "spanish_text": "llamar a emergencias", "category": "Safety"},
+    {"english_text": "I need help now", "spanish_text": "necesito ayuda ahora", "category": "Safety"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Housing and shelter (50)
+    {"english_text": "shelter", "spanish_text": "refugio", "category": "Housing"},
+    {"english_text": "transitional housing", "spanish_text": "vivienda transitoria", "category": "Housing"},
+    {"english_text": "rental assistance", "spanish_text": "asistencia de renta", "category": "Housing"},
+    {"english_text": "landlord", "spanish_text": "propietario", "category": "Housing"},
+    {"english_text": "tenant", "spanish_text": "inquilino", "category": "Housing"},
+    {"english_text": "lease", "spanish_text": "contrato de arrendamiento", "category": "Housing"},
+    {"english_text": "rent", "spanish_text": "renta", "category": "Housing"},
+    {"english_text": "security deposit", "spanish_text": "deposito de garantia", "category": "Housing"},
+    {"english_text": "late fee", "spanish_text": "cargo por atraso", "category": "Housing"},
+    {"english_text": "eviction notice", "spanish_text": "aviso de desalojo", "category": "Housing"},
+    {"english_text": "repair", "spanish_text": "reparacion", "category": "Housing"},
+    {"english_text": "maintenance request", "spanish_text": "solicitud de mantenimiento", "category": "Housing"},
+    {"english_text": "plumber", "spanish_text": "plomero", "category": "Housing"},
+    {"english_text": "electrician", "spanish_text": "electricista", "category": "Housing"},
+    {"english_text": "locksmith", "spanish_text": "cerrajero", "category": "Housing"},
+    {"english_text": "key", "spanish_text": "llave", "category": "Housing"},
+    {"english_text": "mailbox", "spanish_text": "buzon", "category": "Housing"},
+    {"english_text": "address", "spanish_text": "direccion", "category": "Housing"},
+    {"english_text": "proof of address", "spanish_text": "comprobante de domicilio", "category": "Housing"},
+    {"english_text": "utility bill", "spanish_text": "recibo de servicios", "category": "Housing"},
+    {"english_text": "electricity", "spanish_text": "electricidad", "category": "Housing"},
+    {"english_text": "gas service", "spanish_text": "servicio de gas", "category": "Housing"},
+    {"english_text": "water service", "spanish_text": "servicio de agua", "category": "Housing"},
+    {"english_text": "trash service", "spanish_text": "servicio de basura", "category": "Housing"},
+    {"english_text": "internet service", "spanish_text": "servicio de internet", "category": "Housing"},
+    {"english_text": "heat", "spanish_text": "calefaccion", "category": "Housing"},
+    {"english_text": "heater not working", "spanish_text": "calefaccion no funciona", "category": "Housing"},
+    {"english_text": "air conditioning", "spanish_text": "aire acondicionado", "category": "Housing"},
+    {"english_text": "mold", "spanish_text": "moho", "category": "Housing"},
+    {"english_text": "leak", "spanish_text": "fuga", "category": "Housing"},
+    {"english_text": "pest control", "spanish_text": "control de plagas", "category": "Housing"},
+    {"english_text": "smoke detector", "spanish_text": "detector de humo", "category": "Housing"},
+    {"english_text": "carbon monoxide alarm", "spanish_text": "alarma de monoxido", "category": "Housing"},
+    {"english_text": "fire extinguisher", "spanish_text": "extintor", "category": "Housing"},
+    {"english_text": "emergency exit", "spanish_text": "salida de emergencia", "category": "Housing"},
+    {"english_text": "stairwell", "spanish_text": "escalera", "category": "Housing"},
+    {"english_text": "elevator", "spanish_text": "ascensor", "category": "Housing"},
+    {"english_text": "basement", "spanish_text": "sotano", "category": "Housing"},
+    {"english_text": "rooftop", "spanish_text": "azotea", "category": "Housing"},
+    {"english_text": "roommate", "spanish_text": "companero de cuarto", "category": "Housing"},
+    {"english_text": "shared room", "spanish_text": "cuarto compartido", "category": "Housing"},
+    {"english_text": "private room", "spanish_text": "cuarto privado", "category": "Housing"},
+    {"english_text": "bathroom key", "spanish_text": "llave del bano", "category": "Housing"},
+    {"english_text": "laundry room", "spanish_text": "cuarto de lavado", "category": "Housing"},
+    {"english_text": "parking", "spanish_text": "estacionamiento", "category": "Housing"},
+    {"english_text": "parking permit", "spanish_text": "permiso de estacionamiento", "category": "Housing"},
+    {"english_text": "housing voucher", "spanish_text": "vale de vivienda", "category": "Housing"},
+    {"english_text": "inspection", "spanish_text": "inspeccion", "category": "Housing"},
+    {"english_text": "move-in date", "spanish_text": "fecha de mudanza", "category": "Housing"},
+    {"english_text": "move-out date", "spanish_text": "fecha de salida", "category": "Housing"},
+    {"english_text": "storage", "spanish_text": "almacenamiento", "category": "Housing"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Employment & workplace (50)
+    {"english_text": "job application", "spanish_text": "solicitud de empleo", "category": "Employment"},
+    {"english_text": "job interview", "spanish_text": "entrevista de trabajo", "category": "Employment"},
+    {"english_text": "resume", "spanish_text": "curriculum", "category": "Employment"},
+    {"english_text": "work permit", "spanish_text": "permiso de trabajo", "category": "Employment"},
+    {"english_text": "work authorization", "spanish_text": "autorizacion de empleo", "category": "Employment"},
+    {"english_text": "employer", "spanish_text": "empleador", "category": "Employment"},
+    {"english_text": "supervisor", "spanish_text": "supervisor", "category": "Employment"},
+    {"english_text": "coworker", "spanish_text": "companero de trabajo", "category": "Employment"},
+    {"english_text": "work schedule", "spanish_text": "horario de trabajo", "category": "Employment"},
+    {"english_text": "shift", "spanish_text": "turno", "category": "Employment"},
+    {"english_text": "overtime", "spanish_text": "horas extra", "category": "Employment"},
+    {"english_text": "break", "spanish_text": "descanso", "category": "Employment"},
+    {"english_text": "lunch break", "spanish_text": "hora de comida", "category": "Employment"},
+    {"english_text": "sick day", "spanish_text": "dia de enfermedad", "category": "Employment"},
+    {"english_text": "paid time off", "spanish_text": "tiempo pagado", "category": "Employment"},
+    {"english_text": "minimum wage", "spanish_text": "salario minimo", "category": "Employment"},
+    {"english_text": "paycheck", "spanish_text": "cheque de pago", "category": "Employment"},
+    {"english_text": "pay stub", "spanish_text": "recibo de pago", "category": "Employment"},
+    {"english_text": "direct deposit", "spanish_text": "deposito directo", "category": "Employment"},
+    {"english_text": "tax withholding", "spanish_text": "retencion de impuestos", "category": "Employment"},
+    {"english_text": "tax ID number", "spanish_text": "numero de ITIN", "category": "Employment"},
+    {"english_text": "social security number", "spanish_text": "numero de seguro social", "category": "Employment"},
+    {"english_text": "work injury", "spanish_text": "lesion laboral", "category": "Employment"},
+    {"english_text": "workers compensation", "spanish_text": "compensacion laboral", "category": "Employment"},
+    {"english_text": "safety equipment", "spanish_text": "equipo de seguridad", "category": "Employment"},
+    {"english_text": "hard hat", "spanish_text": "casco", "category": "Employment"},
+    {"english_text": "safety goggles", "spanish_text": "lentes de seguridad", "category": "Employment"},
+    {"english_text": "gloves", "spanish_text": "guantes", "category": "Employment"},
+    {"english_text": "steel toe boots", "spanish_text": "botas con punta de acero", "category": "Employment"},
+    {"english_text": "training", "spanish_text": "capacitacion", "category": "Employment"},
+    {"english_text": "orientation", "spanish_text": "orientacion", "category": "Employment"},
+    {"english_text": "probation period", "spanish_text": "periodo de prueba", "category": "Employment"},
+    {"english_text": "promotion", "spanish_text": "ascenso", "category": "Employment"},
+    {"english_text": "demotion", "spanish_text": "degradacion", "category": "Employment"},
+    {"english_text": "layoff", "spanish_text": "despido", "category": "Employment"},
+    {"english_text": "fired", "spanish_text": "despedido", "category": "Employment"},
+    {"english_text": "quit", "spanish_text": "renunciar", "category": "Employment"},
+    {"english_text": "two weeks notice", "spanish_text": "aviso de dos semanas", "category": "Employment"},
+    {"english_text": "reference", "spanish_text": "referencia", "category": "Employment"},
+    {"english_text": "background check", "spanish_text": "verificacion de antecedentes", "category": "Employment"},
+    {"english_text": "drug test", "spanish_text": "prueba de drogas", "category": "Employment"},
+    {"english_text": "employee handbook", "spanish_text": "manual del empleado", "category": "Employment"},
+    {"english_text": "union", "spanish_text": "sindicato", "category": "Employment"},
+    {"english_text": "strike", "spanish_text": "huelga", "category": "Employment"},
+    {"english_text": "staff meeting", "spanish_text": "reunion de personal", "category": "Employment"},
+    {"english_text": "clock in", "spanish_text": "registrar entrada", "category": "Employment"},
+    {"english_text": "clock out", "spanish_text": "registrar salida", "category": "Employment"},
+    {"english_text": "time sheet", "spanish_text": "hoja de tiempo", "category": "Employment"},
+    {"english_text": "badge", "spanish_text": "gafete", "category": "Employment"},
+    {"english_text": "uniform", "spanish_text": "uniforme", "category": "Employment"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Education and childcare (50)
+    {"english_text": "school enrollment", "spanish_text": "inscripcion escolar", "category": "Education"},
+    {"english_text": "student ID", "spanish_text": "credencial de estudiante", "category": "Education"},
+    {"english_text": "teacher conference", "spanish_text": "reunion con maestro", "category": "Education"},
+    {"english_text": "homework", "spanish_text": "tarea", "category": "Education"},
+    {"english_text": "report card", "spanish_text": "boleta de calificaciones", "category": "Education"},
+    {"english_text": "school bus", "spanish_text": "autobus escolar", "category": "Education"},
+    {"english_text": "bus stop", "spanish_text": "parada de autobus", "category": "Education"},
+    {"english_text": "immunization record", "spanish_text": "registro de vacunas", "category": "Education"},
+    {"english_text": "vaccination requirement", "spanish_text": "requisito de vacunas", "category": "Education"},
+    {"english_text": "lunch program", "spanish_text": "programa de almuerzo", "category": "Education"},
+    {"english_text": "free lunch", "spanish_text": "almuerzo gratis", "category": "Education"},
+    {"english_text": "reduced lunch", "spanish_text": "almuerzo reducido", "category": "Education"},
+    {"english_text": "scholarship", "spanish_text": "beca", "category": "Education"},
+    {"english_text": "financial aid", "spanish_text": "ayuda financiera", "category": "Education"},
+    {"english_text": "tuition", "spanish_text": "colegiatura", "category": "Education"},
+    {"english_text": "adult education", "spanish_text": "educacion para adultos", "category": "Education"},
+    {"english_text": "ESL class", "spanish_text": "clase de ingles", "category": "Education"},
+    {"english_text": "literacy program", "spanish_text": "programa de alfabetizacion", "category": "Education"},
+    {"english_text": "GED prep", "spanish_text": "preparacion para GED", "category": "Education"},
+    {"english_text": "college application", "spanish_text": "solicitud universitaria", "category": "Education"},
+    {"english_text": "transcript", "spanish_text": "historial academico", "category": "Education"},
+    {"english_text": "placement test", "spanish_text": "examen de ubicacion", "category": "Education"},
+    {"english_text": "class schedule", "spanish_text": "horario de clases", "category": "Education"},
+    {"english_text": "library card", "spanish_text": "tarjeta de biblioteca", "category": "Education"},
+    {"english_text": "internet access", "spanish_text": "acceso a internet", "category": "Education"},
+    {"english_text": "after-school program", "spanish_text": "programa despues de clases", "category": "Education"},
+    {"english_text": "tutoring", "spanish_text": "tutoria", "category": "Education"},
+    {"english_text": "special education", "spanish_text": "educacion especial", "category": "Education"},
+    {"english_text": "IEP meeting", "spanish_text": "reunion de IEP", "category": "Education"},
+    {"english_text": "school counselor", "spanish_text": "consejero escolar", "category": "Education"},
+    {"english_text": "school nurse", "spanish_text": "enfermera escolar", "category": "Education"},
+    {"english_text": "bullying report", "spanish_text": "reporte de acoso", "category": "Education"},
+    {"english_text": "field trip form", "spanish_text": "permiso de excursion", "category": "Education"},
+    {"english_text": "parent volunteer", "spanish_text": "voluntario padre", "category": "Education"},
+    {"english_text": "daycare", "spanish_text": "guarderia", "category": "Education"},
+    {"english_text": "childcare subsidy", "spanish_text": "subsidio de cuidado infantil", "category": "Education"},
+    {"english_text": "pediatrician", "spanish_text": "pediatra", "category": "Education"},
+    {"english_text": "vaccination appointment", "spanish_text": "cita de vacunas", "category": "Education"},
+    {"english_text": "infant formula", "spanish_text": "formula infantil", "category": "Education"},
+    {"english_text": "diaper bag", "spanish_text": "bolsa de panales", "category": "Education"},
+    {"english_text": "car seat", "spanish_text": "asiento de carro", "category": "Education"},
+    {"english_text": "booster seat", "spanish_text": "asiento elevador", "category": "Education"},
+    {"english_text": "stroller", "spanish_text": "cochecito", "category": "Education"},
+    {"english_text": "playground", "spanish_text": "patio de juegos", "category": "Education"},
+    {"english_text": "nap time", "spanish_text": "hora de dormir", "category": "Education"},
+    {"english_text": "bath time", "spanish_text": "hora del bano", "category": "Education"},
+    {"english_text": "bedtime", "spanish_text": "hora de dormir", "category": "Education"},
+    {"english_text": "storybook", "spanish_text": "libro infantil", "category": "Education"},
+    {"english_text": "child safety", "spanish_text": "seguridad infantil", "category": "Education"},
+    {"english_text": "lost child", "spanish_text": "nino perdido", "category": "Education"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Transportation (40)
+    {"english_text": "bus pass", "spanish_text": "pase de autobus", "category": "Transportation"},
+    {"english_text": "metro card", "spanish_text": "tarjeta del metro", "category": "Transportation"},
+    {"english_text": "train ticket", "spanish_text": "boleto de tren", "category": "Transportation"},
+    {"english_text": "ride fare", "spanish_text": "tarifa de viaje", "category": "Transportation"},
+    {"english_text": "transfer", "spanish_text": "transbordo", "category": "Transportation"},
+    {"english_text": "route map", "spanish_text": "mapa de ruta", "category": "Transportation"},
+    {"english_text": "schedule", "spanish_text": "horario", "category": "Transportation"},
+    {"english_text": "bus stop", "spanish_text": "parada de autobus", "category": "Transportation"},
+    {"english_text": "train station", "spanish_text": "estacion de tren", "category": "Transportation"},
+    {"english_text": "subway station", "spanish_text": "estacion del metro", "category": "Transportation"},
+    {"english_text": "platform", "spanish_text": "anden", "category": "Transportation"},
+    {"english_text": "seat", "spanish_text": "asiento", "category": "Transportation"},
+    {"english_text": "priority seating", "spanish_text": "asiento prioritario", "category": "Transportation"},
+    {"english_text": "stroller space", "spanish_text": "espacio para cochecito", "category": "Transportation"},
+    {"english_text": "bike rack", "spanish_text": "portabicicletas", "category": "Transportation"},
+    {"english_text": "driver's license", "spanish_text": "licencia de conducir", "category": "Transportation"},
+    {"english_text": "state ID", "spanish_text": "identificacion estatal", "category": "Transportation"},
+    {"english_text": "car registration", "spanish_text": "registro del auto", "category": "Transportation"},
+    {"english_text": "car insurance", "spanish_text": "seguro del auto", "category": "Transportation"},
+    {"english_text": "inspection sticker", "spanish_text": "calcomania de inspeccion", "category": "Transportation"},
+    {"english_text": "parking ticket", "spanish_text": "multa de estacionamiento", "category": "Transportation"},
+    {"english_text": "speed limit", "spanish_text": "limite de velocidad", "category": "Transportation"},
+    {"english_text": "traffic light", "spanish_text": "semaforo", "category": "Transportation"},
+    {"english_text": "crosswalk", "spanish_text": "cruce peatonal", "category": "Transportation"},
+    {"english_text": "sidewalk", "spanish_text": "banqueta", "category": "Transportation"},
+    {"english_text": "intersection", "spanish_text": "cruce", "category": "Transportation"},
+    {"english_text": "seat belt", "spanish_text": "cinturon de seguridad", "category": "Transportation"},
+    {"english_text": "airbag", "spanish_text": "bolsa de aire", "category": "Transportation"},
+    {"english_text": "tow truck", "spanish_text": "grua", "category": "Transportation"},
+    {"english_text": "roadside assistance", "spanish_text": "asistencia vial", "category": "Transportation"},
+    {"english_text": "gas station", "spanish_text": "gasolinera", "category": "Transportation"},
+    {"english_text": "carpool", "spanish_text": "viaje compartido", "category": "Transportation"},
+    {"english_text": "rideshare", "spanish_text": "servicio de viaje compartido", "category": "Transportation"},
+    {"english_text": "taxi", "spanish_text": "taxi", "category": "Transportation"},
+    {"english_text": "Uber pickup", "spanish_text": "punto de Uber", "category": "Transportation"},
+    {"english_text": "Lyft pickup", "spanish_text": "punto de Lyft", "category": "Transportation"},
+    {"english_text": "driver", "spanish_text": "conductor", "category": "Transportation"},
+    {"english_text": "passenger", "spanish_text": "pasajero", "category": "Transportation"},
+    {"english_text": "license plate", "spanish_text": "placa", "category": "Transportation"},
+    {"english_text": "toll", "spanish_text": "peaje", "category": "Transportation"},
+    {"english_text": "bridge toll", "spanish_text": "peaje del puente", "category": "Transportation"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Finance and benefits (40)
+    {"english_text": "bank account", "spanish_text": "cuenta bancaria", "category": "Finance"},
+    {"english_text": "checking account", "spanish_text": "cuenta de cheques", "category": "Finance"},
+    {"english_text": "savings account", "spanish_text": "cuenta de ahorros", "category": "Finance"},
+    {"english_text": "debit card", "spanish_text": "tarjeta de debito", "category": "Finance"},
+    {"english_text": "credit card", "spanish_text": "tarjeta de credito", "category": "Finance"},
+    {"english_text": "PIN number", "spanish_text": "numero de PIN", "category": "Finance"},
+    {"english_text": "ATM", "spanish_text": "cajero automatico", "category": "Finance"},
+    {"english_text": "cash deposit", "spanish_text": "deposito en efectivo", "category": "Finance"},
+    {"english_text": "withdrawal", "spanish_text": "retiro", "category": "Finance"},
+    {"english_text": "balance", "spanish_text": "saldo", "category": "Finance"},
+    {"english_text": "bank statement", "spanish_text": "estado de cuenta", "category": "Finance"},
+    {"english_text": "fee", "spanish_text": "cargo", "category": "Finance"},
+    {"english_text": "overdraft", "spanish_text": "sobregiro", "category": "Finance"},
+    {"english_text": "wire transfer", "spanish_text": "transferencia bancaria", "category": "Finance"},
+    {"english_text": "remittance", "spanish_text": "remesa", "category": "Finance"},
+    {"english_text": "money order", "spanish_text": "giro postal", "category": "Finance"},
+    {"english_text": "check", "spanish_text": "cheque", "category": "Finance"},
+    {"english_text": "payee", "spanish_text": "beneficiario", "category": "Finance"},
+    {"english_text": "endorse", "spanish_text": "endosar", "category": "Finance"},
+    {"english_text": "mobile banking", "spanish_text": "banca movil", "category": "Finance"},
+    {"english_text": "online banking", "spanish_text": "banca en linea", "category": "Finance"},
+    {"english_text": "exchange rate", "spanish_text": "tipo de cambio", "category": "Finance"},
+    {"english_text": "currency exchange", "spanish_text": "casa de cambio", "category": "Finance"},
+    {"english_text": "budget", "spanish_text": "presupuesto", "category": "Finance"},
+    {"english_text": "rent assistance", "spanish_text": "asistencia de renta", "category": "Finance"},
+    {"english_text": "utility assistance", "spanish_text": "asistencia de servicios", "category": "Finance"},
+    {"english_text": "food stamps", "spanish_text": "cupones de alimentos", "category": "Finance"},
+    {"english_text": "SNAP application", "spanish_text": "solicitud de SNAP", "category": "Finance"},
+    {"english_text": "WIC office", "spanish_text": "oficina de WIC", "category": "Finance"},
+    {"english_text": "child tax credit", "spanish_text": "credito por hijo", "category": "Finance"},
+    {"english_text": "tax return", "spanish_text": "declaracion de impuestos", "category": "Finance"},
+    {"english_text": "tax refund", "spanish_text": "reembolso de impuestos", "category": "Finance"},
+    {"english_text": "income verification", "spanish_text": "comprobacion de ingresos", "category": "Finance"},
+    {"english_text": "pay frequency", "spanish_text": "frecuencia de pago", "category": "Finance"},
+    {"english_text": "payday loan", "spanish_text": "prestamo de dia de pago", "category": "Finance"},
+    {"english_text": "fraud alert", "spanish_text": "alerta de fraude", "category": "Finance"},
+    {"english_text": "identity theft", "spanish_text": "robo de identidad", "category": "Finance"},
+    {"english_text": "financial counseling", "spanish_text": "asesoria financiera", "category": "Finance"},
+    {"english_text": "budget worksheet", "spanish_text": "hoja de presupuesto", "category": "Finance"},
+    {"english_text": "savings goal", "spanish_text": "meta de ahorro", "category": "Finance"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Immigration, documents, and status (50)
+    {"english_text": "passport", "spanish_text": "pasaporte", "category": "Immigration"},
+    {"english_text": "visa", "spanish_text": "visa", "category": "Immigration"},
+    {"english_text": "entry stamp", "spanish_text": "sello de entrada", "category": "Immigration"},
+    {"english_text": "border crossing", "spanish_text": "cruce fronterizo", "category": "Immigration"},
+    {"english_text": "I-94 record", "spanish_text": "registro I-94", "category": "Immigration"},
+    {"english_text": "work permit card", "spanish_text": "tarjeta de permiso de trabajo", "category": "Immigration"},
+    {"english_text": "green card", "spanish_text": "tarjeta verde", "category": "Immigration"},
+    {"english_text": "case status", "spanish_text": "estatus del caso", "category": "Immigration"},
+    {"english_text": "case number", "spanish_text": "numero de caso", "category": "Immigration"},
+    {"english_text": "receipt notice", "spanish_text": "aviso de recibo", "category": "Immigration"},
+    {"english_text": "biometrics appointment", "spanish_text": "cita de biometria", "category": "Immigration"},
+    {"english_text": "fingerprints", "spanish_text": "huellas dactilares", "category": "Immigration"},
+    {"english_text": "background check", "spanish_text": "revision de antecedentes", "category": "Immigration"},
+    {"english_text": "interview notice", "spanish_text": "aviso de entrevista", "category": "Immigration"},
+    {"english_text": "asylum interview", "spanish_text": "entrevista de asilo", "category": "Immigration"},
+    {"english_text": "credible fear interview", "spanish_text": "entrevista de miedo creible", "category": "Immigration"},
+    {"english_text": "removal proceedings", "spanish_text": "proceso de expulsion", "category": "Immigration"},
+    {"english_text": "master calendar hearing", "spanish_text": "audiencia maestra", "category": "Immigration"},
+    {"english_text": "individual hearing", "spanish_text": "audiencia individual", "category": "Immigration"},
+    {"english_text": "appeal", "spanish_text": "apelar", "category": "Immigration"},
+    {"english_text": "notice to appear", "spanish_text": "aviso de comparecencia", "category": "Immigration"},
+    {"english_text": "parole document", "spanish_text": "documento de parole", "category": "Immigration"},
+    {"english_text": "sponsor", "spanish_text": "patrocinador", "category": "Immigration"},
+    {"english_text": "sponsor change", "spanish_text": "cambio de patrocinador", "category": "Immigration"},
+    {"english_text": "change of address", "spanish_text": "cambio de direccion", "category": "Immigration"},
+    {"english_text": "ICE check-in", "spanish_text": "cita con ICE", "category": "Immigration"},
+    {"english_text": "immigration court", "spanish_text": "corte de inmigracion", "category": "Immigration"},
+    {"english_text": "EOIR hotline", "spanish_text": "linea de EOIR", "category": "Immigration"},
+    {"english_text": "legal orientation", "spanish_text": "orientacion legal", "category": "Immigration"},
+    {"english_text": "pro bono lawyer", "spanish_text": "abogado pro bono", "category": "Immigration"},
+    {"english_text": "fee waiver", "spanish_text": "exencion de tarifa", "category": "Immigration"},
+    {"english_text": "translation help", "spanish_text": "ayuda con traduccion", "category": "Immigration"},
+    {"english_text": "document copy", "spanish_text": "copia de documento", "category": "Immigration"},
+    {"english_text": "certified translation", "spanish_text": "traduccion certificada", "category": "Immigration"},
+    {"english_text": "birth certificate", "spanish_text": "acta de nacimiento", "category": "Immigration"},
+    {"english_text": "marriage certificate", "spanish_text": "acta de matrimonio", "category": "Immigration"},
+    {"english_text": "school records", "spanish_text": "expedientes escolares", "category": "Immigration"},
+    {"english_text": "medical records", "spanish_text": "expedientes medicos", "category": "Immigration"},
+    {"english_text": "vaccination card", "spanish_text": "cartilla de vacunas", "category": "Immigration"},
+    {"english_text": "police report", "spanish_text": "reporte policial", "category": "Immigration"},
+    {"english_text": "affidavit of support", "spanish_text": "afidavit de apoyo", "category": "Immigration"},
+    {"english_text": "sponsor letter", "spanish_text": "carta de patrocinio", "category": "Immigration"},
+    {"english_text": "public charge", "spanish_text": "carga publica", "category": "Immigration"},
+    {"english_text": "travel permit", "spanish_text": "permiso de viaje", "category": "Immigration"},
+    {"english_text": "advance parole", "spanish_text": "parole adelantado", "category": "Immigration"},
+    {"english_text": "EAD renewal", "spanish_text": "renovacion de EAD", "category": "Immigration"},
+    {"english_text": "case update", "spanish_text": "actualizacion del caso", "category": "Immigration"},
+    {"english_text": "USCIS account", "spanish_text": "cuenta de USCIS", "category": "Immigration"},
+    {"english_text": "check case status", "spanish_text": "ver estatus del caso", "category": "Immigration"},
+    {"english_text": "mail from immigration", "spanish_text": "correo de inmigracion", "category": "Immigration"},
+    {"english_text": "biometric fee", "spanish_text": "tarifa de biometria", "category": "Immigration"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Technology and communication (36)
+    {"english_text": "mobile phone", "spanish_text": "telefono movil", "category": "Technology"},
+    {"english_text": "smartphone", "spanish_text": "telefono inteligente", "category": "Technology"},
+    {"english_text": "SIM card", "spanish_text": "tarjeta SIM", "category": "Technology"},
+    {"english_text": "data plan", "spanish_text": "plan de datos", "category": "Technology"},
+    {"english_text": "prepaid plan", "spanish_text": "plan prepago", "category": "Technology"},
+    {"english_text": "unlimited data", "spanish_text": "datos ilimitados", "category": "Technology"},
+    {"english_text": "wi-fi password", "spanish_text": "contrasena de wifi", "category": "Technology"},
+    {"english_text": "hotspot", "spanish_text": "punto de acceso", "category": "Technology"},
+    {"english_text": "charger", "spanish_text": "cargador", "category": "Technology"},
+    {"english_text": "power bank", "spanish_text": "bateria externa", "category": "Technology"},
+    {"english_text": "outlet adapter", "spanish_text": "adaptador de enchufe", "category": "Technology"},
+    {"english_text": "email", "spanish_text": "correo electronico", "category": "Technology"},
+    {"english_text": "email address", "spanish_text": "direccion de correo", "category": "Technology"},
+    {"english_text": "inbox", "spanish_text": "bandeja de entrada", "category": "Technology"},
+    {"english_text": "attachment", "spanish_text": "adjunto", "category": "Technology"},
+    {"english_text": "text message", "spanish_text": "mensaje de texto", "category": "Technology"},
+    {"english_text": "voicemail", "spanish_text": "correo de voz", "category": "Technology"},
+    {"english_text": "missed call", "spanish_text": "llamada perdida", "category": "Technology"},
+    {"english_text": "contact list", "spanish_text": "lista de contactos", "category": "Technology"},
+    {"english_text": "emergency alerts", "spanish_text": "alertas de emergencia", "category": "Technology"},
+    {"english_text": "translation app", "spanish_text": "aplicacion de traduccion", "category": "Technology"},
+    {"english_text": "map app", "spanish_text": "aplicacion de mapas", "category": "Technology"},
+    {"english_text": "GPS directions", "spanish_text": "direcciones GPS", "category": "Technology"},
+    {"english_text": "public wifi", "spanish_text": "wifi publico", "category": "Technology"},
+    {"english_text": "library computer", "spanish_text": "computadora de biblioteca", "category": "Technology"},
+    {"english_text": "print document", "spanish_text": "imprimir documento", "category": "Technology"},
+    {"english_text": "scanner", "spanish_text": "escaner", "category": "Technology"},
+    {"english_text": "copy machine", "spanish_text": "fotocopiadora", "category": "Technology"},
+    {"english_text": "username", "spanish_text": "nombre de usuario", "category": "Technology"},
+    {"english_text": "password", "spanish_text": "contrasena", "category": "Technology"},
+    {"english_text": "reset password", "spanish_text": "restablecer contrasena", "category": "Technology"},
+    {"english_text": "two-factor code", "spanish_text": "codigo de dos factores", "category": "Technology"},
+    {"english_text": "online form", "spanish_text": "formulario en linea", "category": "Technology"},
+    {"english_text": "video call", "spanish_text": "videollamada", "category": "Technology"},
+    {"english_text": "group chat", "spanish_text": "chat grupal", "category": "Technology"},
+    {"english_text": "mute", "spanish_text": "silenciar", "category": "Technology"},
+    {"english_text": "unmute", "spanish_text": "activar sonido", "category": "Technology"},
+]
+
+ESSENTIAL_VOCAB += [
+    # Community resources and services (35)
+    {"english_text": "food pantry", "spanish_text": "despensa de alimentos", "category": "Community"},
+    {"english_text": "soup kitchen", "spanish_text": "comedor comunitario", "category": "Community"},
+    {"english_text": "clothing closet", "spanish_text": "ropero comunitario", "category": "Community"},
+    {"english_text": "donation center", "spanish_text": "centro de donaciones", "category": "Community"},
+    {"english_text": "community center", "spanish_text": "centro comunitario", "category": "Community"},
+    {"english_text": "library", "spanish_text": "biblioteca", "category": "Community"},
+    {"english_text": "park", "spanish_text": "parque", "category": "Community"},
+    {"english_text": "recreation center", "spanish_text": "centro recreativo", "category": "Community"},
+    {"english_text": "youth program", "spanish_text": "programa juvenil", "category": "Community"},
+    {"english_text": "elder services", "spanish_text": "servicios para mayores", "category": "Community"},
+    {"english_text": "faith community", "spanish_text": "comunidad religiosa", "category": "Community"},
+    {"english_text": "volunteer", "spanish_text": "voluntario", "category": "Community"},
+    {"english_text": "support group", "spanish_text": "grupo de apoyo", "category": "Community"},
+    {"english_text": "case manager", "spanish_text": "administrador de casos", "category": "Community"},
+    {"english_text": "social worker", "spanish_text": "trabajador social", "category": "Community"},
+    {"english_text": "benefits office", "spanish_text": "oficina de beneficios", "category": "Community"},
+    {"english_text": "public health office", "spanish_text": "oficina de salud publica", "category": "Community"},
+    {"english_text": "city ID", "spanish_text": "identificacion municipal", "category": "Community"},
+    {"english_text": "open hours", "spanish_text": "horario de atencion", "category": "Community"},
+    {"english_text": "appointment required", "spanish_text": "se requiere cita", "category": "Community"},
+    {"english_text": "walk-in", "spanish_text": "sin cita", "category": "Community"},
+    {"english_text": "waiting list", "spanish_text": "lista de espera", "category": "Community"},
+    {"english_text": "orientation session", "spanish_text": "sesion de orientacion", "category": "Community"},
+    {"english_text": "intake form", "spanish_text": "formulario de ingreso", "category": "Community"},
+    {"english_text": "proof of income", "spanish_text": "comprobante de ingresos", "category": "Community"},
+    {"english_text": "proof of residence", "spanish_text": "comprobante de domicilio", "category": "Community"},
+    {"english_text": "emergency fund", "spanish_text": "fondo de emergencia", "category": "Community"},
+    {"english_text": "housing navigator", "spanish_text": "navegador de vivienda", "category": "Community"},
+    {"english_text": "job center", "spanish_text": "centro de empleo", "category": "Community"},
+    {"english_text": "career coach", "spanish_text": "asesor de carrera", "category": "Community"},
+    {"english_text": "mental health clinic", "spanish_text": "clinica de salud mental", "category": "Community"},
+    {"english_text": "food delivery", "spanish_text": "entrega de comida", "category": "Community"},
+    {"english_text": "meal voucher", "spanish_text": "vale de comida", "category": "Community"},
+    {"english_text": "transportation voucher", "spanish_text": "vale de transporte", "category": "Community"},
+    {"english_text": "resource fair", "spanish_text": "feria de recursos", "category": "Community"},
+    {"english_text": "community meeting", "spanish_text": "reunion comunitaria", "category": "Community"},
+    {"english_text": "refugee resettlement agency", "spanish_text": "agencia de reasentamiento", "category": "Community"},
+    {"english_text": "welcome orientation", "spanish_text": "orientacion de bienvenida", "category": "Community"},
+    {"english_text": "community navigator", "spanish_text": "navegador comunitario", "category": "Community"},
+    {"english_text": "language access", "spanish_text": "acceso linguistico", "category": "Community"},
+    {"english_text": "interpretation request", "spanish_text": "solicitud de interpretacion", "category": "Community"},
+    {"english_text": "crisis hotline", "spanish_text": "linea de crisis", "category": "Community"},
+    {"english_text": "mental health crisis line", "spanish_text": "linea de crisis de salud mental", "category": "Community"},
+    {"english_text": "rent relief program", "spanish_text": "programa de alivio de renta", "category": "Community"},
+    {"english_text": "utility shutoff notice", "spanish_text": "aviso de corte de servicios", "category": "Community"},
+    {"english_text": "hygiene kit", "spanish_text": "kit de higiene", "category": "Community"},
+    {"english_text": "transportation reimbursement", "spanish_text": "reembolso de transporte", "category": "Community"},
+]
+
+
+def _normalize_entry(entry: dict) -> dict:
+    """Trim text, keep category for notes."""
+    en = entry["english_text"].strip()
+    es = entry["spanish_text"].strip()
+    category = (entry.get("category") or "").strip()
+    if not category:
+        raise ValueError(f"Category missing for vocab entry: {en} / {es}")
+    notes = entry.get("notes", DEFAULT_NOTES)
+    notes = f"{DEFAULT_NOTES} - {category}"
+    return {"en": en, "es": es, "notes": notes, "category": category}
+
+
+class SeedEssentialVocab(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = create_app()
+        cls.app_context = cls.app.app_context()
+        cls.app_context.push()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.app_context.pop()
+
+    def test_seed_essential_vocab(self):
+        normalized = [_normalize_entry(e) for e in ESSENTIAL_VOCAB]
+
+        unique_entries = {}
+        for entry in normalized:
+            key = (entry["en"].lower(), entry["es"].lower())
+            if key not in unique_entries:
+                unique_entries[key] = entry
+
+        entries = list(unique_entries.values())
+        self.assertGreaterEqual(len(entries), 500, "Vocab list must be at least 500 unique entries.")
+
+        # Optional: keep a reference user for attribution, but cards will be global (user_id = NULL)
+        if not User.query.filter_by(email=PACK_USER_EMAIL).first():
+            user = User(
+                email=PACK_USER_EMAIL,
+                password_hash=generate_password_hash("essential-pack"),
+                display_name=PACK_USER_NAME,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        # Ensure category sets exist (global sets)
+        categories = sorted({e["category"] for e in entries})
+        self.assertGreaterEqual(len(categories), 1, "At least one category is required.")
+        sets_by_name = {}
+        for cat in categories:
+            set_obj = SetTable.query.filter_by(user_id=None, name=cat).first()
+            if not set_obj:
+                set_obj = SetTable(
+                    name=cat,
+                    description=f"Essential vocabulary: {cat}",
+                    user_id=None,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                db.session.add(set_obj)
+                db.session.flush()
+            sets_by_name[cat] = set_obj
+
+        created = 0
+        for entry in entries:
+            exists = Card.query.filter(
+                and_(
+                    Card.user_id.is_(None),
+                    Card.english_text == entry["en"],
+                    Card.spanish_text == entry["es"],
+                )
+            ).first()
+            if exists:
+                card = exists
+            else:
+                card = Card(
+                    english_text=entry["en"],
+                    spanish_text=entry["es"],
+                    notes=entry["notes"],
+                    user_id=None,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                db.session.add(card)
+                created += 1
+
+            # Attach to category set if not already linked
+            cat = entry["category"]
+            target_set = sets_by_name.get(cat)
+            if target_set and target_set not in card.sets:
+                card.sets.append(target_set)
+            # Remove memberships in other public sets so each card is indexed by its category only
+            for s in list(card.sets):
+                if s.user_id is None and s.name != cat:
+                    card.sets.remove(s)
+
+        db.session.commit()
+        total = Card.query.filter(Card.user_id.is_(None)).count()
+        self.assertGreaterEqual(total, len(entries))
+        print(f"Seeded {created} essential vocab cards; total now {total} global cards.")
+
+
+if __name__ == "__main__":
+    unittest.main()

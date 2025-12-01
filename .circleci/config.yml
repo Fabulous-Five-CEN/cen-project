@@ -121,6 +121,7 @@ jobs:
             docker compose exec -T web python -m unittest app.scripts.seed_cards
             docker compose exec -T web python -m unittest app.scripts.seed_sets
             docker compose exec -T web python -m unittest app.scripts.see_sets
+            docker compose exec -T web python -m unittest app.scripts.seed_essential_vocab
       - run:
           name: Tear down Docker services
           command: docker compose down -v

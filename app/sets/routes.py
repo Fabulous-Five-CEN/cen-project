@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models.orm_objects import Card, User, SetTable
 from datetime import datetime, timezone
 from flask_login import login_required, current_user
+from sqlalchemy import or_
 
 @sets_bp.route("/")
 @login_required
@@ -15,7 +16,12 @@ def sets_home():
     
     """Gets all sets associated with a specific user_id."""
 
-    all_sets = SetTable.query.filter_by(user_id=user_id).order_by(SetTable.created_at.desc()).all()
+    all_sets = (
+        SetTable.query
+        .filter(or_(SetTable.user_id == user_id, SetTable.user_id.is_(None)))
+        .order_by(SetTable.created_at.desc())
+        .all()
+    )
     set_list = [serialize_set(s) for s in all_sets]
     
     return render_template("sets.html", user_sets=set_list)
@@ -48,7 +54,7 @@ def get_all_sets():
 
     sets = (
         SetTable.query
-        .filter_by(user_id=user_id)
+        .filter(or_(SetTable.user_id == user_id, SetTable.user_id.is_(None)))
         .order_by(SetTable.created_at.desc())
         .all()
     )
@@ -68,6 +74,8 @@ def get_set_details(set_id):
 
 
     set_obj = get_set_or_404(set_id)
+    if set_obj.user_id and set_obj.user_id != user_id:
+        return jsonify({"Error": "Unauthorized to view this set"}), 403
     set_data = serialize_set(set_obj)
     set_data['cards'] = [
         {"id": card.id, "english_text": card.english_text, "spanish_text": card.spanish_text}
@@ -170,6 +178,8 @@ def add_card_to_set(set_id):
         return jsonify({"error": "No card_ids provided"}), 400
 
     set_obj = get_set_or_404(set_id)
+    if set_obj.user_id and set_obj.user_id != user_id:
+        return jsonify({"error": "Unauthorized to modify this set"}), 403
     
     if isinstance(card_ids, int):
         card_ids = [card_ids]
@@ -208,6 +218,8 @@ def delete_card_from_set(set_id):
         return jsonify({"error": "Missing required field: card_id"}), 400
 
     set_obj = get_set_or_404(set_id)
+    if set_obj.user_id and set_obj.user_id != user_id:
+        return jsonify({"error": "Unauthorized to modify this set"}), 403
     card = db.session.get(Card, card_id)
 
     if not card or card not in set_obj.cards:
@@ -234,6 +246,8 @@ def view_set(set_id):
 
 
     set_obj = get_set_or_404(set_id)
+    if set_obj.user_id and set_obj.user_id != user_id:
+        return jsonify({"error": "Unauthorized to view this set"}), 403
     user_cards = [
         {
             "id": card.id,
@@ -269,12 +283,12 @@ def update_card_sets(card_id):
     except ValueError:
         return jsonify({"error": "set_ids must be integers"}), 400
 
-    # Get the card
+    # Get the card (allow global or user-owned cards)
     card = db.session.get(Card, card_id)
-    if not card or card.user_id != current_user.id:
+    if not card or (card.user_id is not None and card.user_id != current_user.id):
         return jsonify({"error": f"No card found with id {card_id}"}), 404
 
-    # All sets belong to the user
+    # All sets belong to the user (do not allow modifying global sets here)
     user_sets = {s.id: s for s in SetTable.query.filter_by(user_id=current_user.id).all()}
 
     # Current set memberships
