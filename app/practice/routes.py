@@ -7,7 +7,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import or_
 
 
-
+# Serialize set - called many times, abstracted into function
 def serialize_set(set_obj):
     """Converts a SetTable object into a JSON-friendly dictionary."""
     return {
@@ -20,24 +20,29 @@ def serialize_set(set_obj):
         "updated_at": set_obj.updated_at.isoformat()
     }
 
-
+# Default page route
 @practice_bp.route("/")
 @login_required
 def practice_home():
+    
+    # Check valid user in database
     user_id = current_user.id
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
 
+    # Retrieve all sets for users
     all_sets = SetTable.query.filter(or_(SetTable.user_id == user_id, SetTable.user_id.is_(None))).all()
     sets = [serialize_set(s) for s in all_sets]
     return render_template("practice.html", sets=sets)  
 
+# Retrieve a specific set for practice
 @practice_bp.route("/set", defaults={"set_id": None})
 @practice_bp.route("/set/<int:set_id>")
 @login_required
 def practice(set_id):
-    """Gets set associated with the set_id and user_id"""
+
+    # Check valid user in database
     user_id = current_user.id
     user = db.session.get(User, user_id)
     if not user:
@@ -56,11 +61,10 @@ def practice(set_id):
         cards = set_obj.cards
     
     else:
-    # or if set_id is blank (no json was retrieved, so no set was selected, we assume the user wants to do ALL their cards)
-        # retrieve all cards associated with the user or global
+    # If set_id is blank --> no set was selected, assume user wants to "Practice All" cards
         cards = Card.query.filter(or_(Card.user_id == user.id, Card.user_id.is_(None))).all()
 
-    # create dict object returning all card information to the frontend via json
+    # Create dict object returning all card information to the frontend via json
 
     cards_dict = [
         {
@@ -82,6 +86,7 @@ def practice(set_id):
 
 # a function that marks all the cards as practiced in the PracticeHistory table
 def practiceHistory(cards, user_id, set_id=None):
+    
     # go into db and create practicehistory object for each card in the cards_dict
     timestamp = datetime.now(timezone.utc)
     for card in cards:

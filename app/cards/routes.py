@@ -8,15 +8,21 @@ from app.models import Card, User
 from datetime import datetime, timezone
 import os
 
+
+# Auto Translate API Setup 
+
 LECTO_API_URL = "https://lecto-translation.p.rapidapi.com/v1/translate/text"
 RAPIDAPI_KEY = os.environ.get("RAPIDAPI_KEY")  
 LECTO_API_HOST = "lecto-translation.p.rapidapi.com"
 
+
+# Default home route
 @cards_bp.route("/")
 @login_required
 def cards_home():
     user_id = current_user.id
 
+    # Retrieve each card
     cards = (
         db.session.query(Card)
         .filter(or_(Card.user_id == user_id, Card.user_id.is_(None)))
@@ -26,7 +32,7 @@ def cards_home():
 
     cards_data = []
     for card in cards:
-        # set membershsip
+        # Retrieve current set membership for each card
         sets_info = [{"id": s.id, "name": s.name} for s in card.sets]
 
         cards_data.append({
@@ -45,7 +51,7 @@ def cards_home():
 
 
          
-
+# Create new card route
 @cards_bp.route("/new", methods=["POST"])
 @login_required
 def new_card():
@@ -100,22 +106,26 @@ def new_card():
         }
     }), 201
 
+# Edit card fields
 @cards_bp.route("/edit/<int:card_id>", methods = ["PUT"])
 @login_required
 def edit_card(card_id):
+
+    # Confirm active user is valid
     user_id = current_user.id
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
     
 
+    # Confirm card is valid and exists
     data = request.get_json() or {}
-
     card = db.session.get(Card, card_id)
     if not card:
             return jsonify({"Error" : f"No card exists in database with id {card_id}"}), 404
     
 
+    # Obtain data
     english_text = data.get("english_text")
     spanish_text = data.get("spanish_text")
     notes = data.get("notes")
@@ -150,15 +160,18 @@ def edit_card(card_id):
         db.session.rollback()
         return jsonify({"error": f"Failed to update card: {str(e)}"}), 500
     
+# Delete card route
 @cards_bp.route("/delete/<int:card_id>", methods = ["DELETE"])
 @login_required
 def delete_card(card_id):
 
+    # Confirm valid user in database
     user_id = current_user.id
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
     
+    # Confirm valid card in database
     card = db.session.get(Card, card_id)
     if not card:
         return jsonify({"error": f"No card found with id {card_id}"}), 404
@@ -172,18 +185,22 @@ def delete_card(card_id):
         return jsonify({"error": f"Failed to delete card: {str(e)}"}), 500
 
 
+# Auto Translate route
 @cards_bp.route("/auto-translate", methods=["POST"]) 
 @login_required
 def auto_translate():
+    # retireve data fields
     data = request.get_json() or {}
     text = data.get('text')
     direction = data.get('direction')
     user_id = current_user.id
 
+    # Confirm valid user in database
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"Error" : f"User with id {user_id} is not a registered user"}), 404
 
+    # Check that valid language direction is present in JSON
     if not text or direction not in ['english_to_spanish', 'spanish_to_english']:
             return jsonify({"error" : "Invalid request"}), 400
     
