@@ -307,3 +307,42 @@ def update_card_sets(card_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Failed to update sets: {str(e)}"}), 500
+
+
+# Method used for adding cards during testing/seeding, but not currently on application deployment
+
+@sets_bp.route("/add_card/<int:set_id>", methods=["POST"])
+@login_required
+def add_card_to_set(set_id):
+    data = request.get_json() or {}
+    card_ids = data.get("card_ids")
+    if not card_ids:
+        return jsonify({"error": "No card_ids provided"}), 400
+
+    set_obj = get_set_or_404(set_id)
+    
+    # Only owner may modify the set
+    if set_obj.user_id != current_user.id:
+        return jsonify({"error": "Forbidden: you do not own this set"}), 403
+
+    if isinstance(card_ids, int):
+        card_ids = [card_ids]
+
+    cards = Card.query.filter(Card.id.in_(card_ids)).all()
+    if len(cards) != len(set(card_ids)):
+         return jsonify({"error": "One or more card IDs were not found"}), 404
+
+    try:
+        added_ids = []
+        for card in cards:
+            if card not in set_obj.cards:
+                set_obj.cards.append(card)
+                added_ids.append(card.id)
+        db.session.commit()
+        return jsonify({
+            "message": f"{len(added_ids)} card(s) successfully added to set {set_id}",
+            "added_card_ids": added_ids
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to add cards to set: {str(e)}"}), 500
