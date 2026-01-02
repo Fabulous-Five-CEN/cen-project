@@ -14,7 +14,27 @@
       <div class="col-4"> 
           <input id="searchCards" class="form-control" placeholder="Search cards…">
       </div>
-      
+    <div class="col-3">
+      <div class="dropdown w-100">
+        <button
+          class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+          type="button"
+          id="filterBySetBtn"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          Filter by set
+        </button>
+
+        <div
+          class="dropdown-menu p-2 w-100"
+          style="max-height: 240px; overflow-y: auto;"
+          id="filterBySetMenu"
+        >
+        </div>
+      </div>
+    </div>
+
       <div class="col-auto"> 
           <button class="btn btn-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#cardModal">
               Add Card +
@@ -174,7 +194,9 @@ const cardsGrid = document.getElementById('cardsGrid');
 // Load initial cards from backend JSON
 let cards = JSON.parse(document.getElementById('cards-data').textContent);
 
-
+const searchInput = document.getElementById('searchCards');
+const filterBySetBtn = document.getElementById("filterBySetBtn");
+const filterBySetMenu = document.getElementById("filterBySetMenu");
 // When not null, we are editing the card at this index
 let editIndex = null;
 let editingCardId = null; // Track the backend card ID when editing
@@ -257,6 +279,8 @@ function renderCards() {
     });
 
   document.getElementById("cardCount").textContent = `(${cards.length} card${cards.length === 1 ? '' : 's'})`;
+  applyFilters();
+
 }
 
 /* ****************************************************
@@ -298,6 +322,50 @@ async function loadAssignSets(selectedIds = []) {
   });
 }
 
+
+async function loadFilterSets() {
+  const res = await fetch("/sets/all");
+  const sets = await res.json();
+
+  filterBySetMenu.innerHTML = "";
+
+  sets.forEach(s => {
+    const row = document.createElement("div");
+    row.className = "form-check";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "form-check-input";
+    input.id = `filterSet_${s.id}`;
+    input.value = s.id;
+
+    input.addEventListener("change", () => {
+      updateFilterButtonLabel();
+      applyFilters();
+    });
+
+    const label = document.createElement("label");
+    label.className = "form-check-label";
+    label.htmlFor = input.id;
+    label.textContent = s.name;
+
+    row.appendChild(input);
+    row.appendChild(label);
+    filterBySetMenu.appendChild(row);
+  });
+}
+
+function updateFilterButtonLabel() {
+  const checked = filterBySetMenu.querySelectorAll("input:checked");
+
+  if (checked.length === 0) {
+    filterBySetBtn.textContent = "Filter by set";
+  } else if (checked.length === 1) {
+    filterBySetBtn.textContent = checked[0].nextSibling.textContent;
+  } else {
+    filterBySetBtn.textContent = `${checked.length} sets selected`;
+  }
+}
 
 
 /* ****************************************************
@@ -462,18 +530,37 @@ cardsGrid.addEventListener('click', async (e) => {
 * G) INITIAL RENDER: draw everything we have at load
 * **************************************************** */
 renderCards();
+loadFilterSets();
+
 
 /* ****************************************************
 * I) SEARCH FILTER
 * **************************************************** */
-const searchInput = document.getElementById('searchCards');
-searchInput.addEventListener('input', () => {
-    const term = searchInput.value.toLowerCase();
-    document.querySelectorAll('#cardsGrid .card').forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.parentElement.style.display = text.includes(term) ? '' : 'none';
-    });
-});
+
+
+searchInput.addEventListener('input', applyFilters);
+filterBySetSelect.addEventListener('change', applyFilters);
+
+function applyFilters() {
+  const term = searchInput.value.toLowerCase();
+const selectedSetIds = Array.from(filterBySetMenu.querySelectorAll("input:checked")).map(chk => Number(chk.value));
+
+  document.querySelectorAll('#cardsGrid .card').forEach(card => {
+    const idx = Number(card.dataset.index);
+    const cardData = cards[idx];
+
+    const matchesSearch = card.textContent.toLowerCase().includes(term);
+
+    const matchesSet =
+      selectedSetIds.length === 0 || // no selection = show all
+      (cardData.set_ids && cardData.set_ids.some(id => selectedSetIds.includes(id)));
+
+    card.parentElement.style.display =
+      matchesSearch && matchesSet ? '' : 'none';
+  });
+}
+
+
 </script>
 
 

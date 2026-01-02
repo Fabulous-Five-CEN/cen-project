@@ -1,7 +1,7 @@
 from typing import Optional
 from urllib.parse import urlparse
 
-from flask import jsonify, render_template, request, redirect, url_for
+from flask import jsonify, render_template, request, redirect, url_for, current_app, session
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError
 
@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models import User
 
 from . import auth_bp
+
 
 
 def _serialize_user(user: User) -> dict:
@@ -115,3 +116,24 @@ def logout():
 @login_required
 def account_home():
     return render_template("account.html", user=current_user)
+
+
+
+# DEMO LOGIN MODE - ONLY ENABLED WHEN PROD ENV = DEMO
+
+
+@auth_bp.route("/demo-login", methods=["POST"])
+def demo_login():
+  
+    if not current_app.config.get("DEMO_MODE"):
+        return redirect(url_for("auth.login"))
+
+    demo_user = User.query.filter_by(email="demo@test.com").first()
+    if not demo_user:
+        return "Demo user not found", 404
+
+    # Log in demo user with ephemeral session
+    login_user(demo_user, remember=False)  # do NOT persist login
+    session.permanent = False  # ensures session expires after browser close or configured lifetime
+
+    return redirect(url_for("main.dashboard"))

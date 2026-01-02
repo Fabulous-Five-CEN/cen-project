@@ -26,9 +26,17 @@
             <button class="btn btn-primary w-100" type="submit">Sign in</button>
           </form>
           <div class="text-center small mt-3">
-            <button id="switchToRegister" type="button" class="btn btn-link p-0">
-              Need an account? Register
-            </button>
+              {% if config['DEMO_MODE'] %}
+                <form method="POST" action="{{ url_for('auth.demo_login') }}">
+                  <button class="btn btn-link p-0" type="submit">
+                    Don’t have an account? Proceed with Demo Mode
+                  </button>
+                </form>
+              {% else %}
+                <button id="switchToRegister" type="button" class="btn btn-link p-0">
+                  Need an account? Register
+                </button>
+              {% endif %}
           </div>
         </div>
       </div>
