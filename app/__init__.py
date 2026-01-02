@@ -2,6 +2,7 @@ from flask import Flask, jsonify, redirect, request, url_for
 from .extensions import db, login_manager
 from .models import orm_objects
 from .models.orm_objects import User
+from .models.orm_objects_demo import DemoUser 
 
 # Import blueprints
 from .main import main_bp
