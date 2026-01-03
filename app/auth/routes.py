@@ -5,8 +5,9 @@ from flask import jsonify, render_template, request, redirect, url_for, current_
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError
 
+from datetime import datetime, timezone
 from app.extensions import db
-from app.models import User
+from app.models import User, Card, CardSet, SetTable, PracticeHistory
 
 from . import auth_bp
 
@@ -122,18 +123,35 @@ def account_home():
 # DEMO LOGIN MODE - ONLY ENABLED WHEN PROD ENV = DEMO
 
 
+_last_demo_wipe = None
+
 @auth_bp.route("/demo-login", methods=["POST"])
 def demo_login():
   
+    global _last_demo_wipe
+
     if not current_app.config.get("DEMO_MODE"):
         return redirect(url_for("auth.login"))
 
     demo_user = User.query.filter_by(email="demo@test.com").first()
     if not demo_user:
         return "Demo user not found", 404
+    
 
-    # Log in demo user with ephemeral session
+    now = datetime.now(timezone.utc)
+    if not _last_demo_wipe or now.hour != _last_demo_wipe.hour:
+        _last_demo_wipe = now
+
+       
+        Card.query.filter_by(user_id=demo_user.id).delete()
+        SetTable.query.filter_by(user_id=demo_user.id).delete()
+        PracticeHistory.query.filter_by(user_id=demo_user.id).delete()
+        db.session.commit()
+
     login_user(demo_user, remember=False)  # do NOT persist login
     session.permanent = False  # ensures session expires after browser close or configured lifetime
+
+    session["db"] = "demo"
+
 
     return redirect(url_for("main.dashboard"))

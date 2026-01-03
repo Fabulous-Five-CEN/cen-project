@@ -26,7 +26,7 @@
             <button class="btn btn-primary w-100" type="submit">Sign in</button>
           </form>
           <div class="text-center small mt-3">
-              {% if config['DEMO_MODE'] %}
+              {% if 'DEMO_MODE' %}
                 <form method="POST" action="{{ url_for('auth.demo_login') }}">
                   <button class="btn btn-link p-0" type="submit">
                     Don’t have an account? Proceed with Demo Mode

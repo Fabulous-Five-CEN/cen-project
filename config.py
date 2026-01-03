@@ -12,3 +12,5 @@ class Config:
         ),
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    DEMO_MODE = os.environ.get("APP_ENV") == "demo"

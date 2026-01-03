@@ -30,6 +30,7 @@ def setup_database():
             # and creates the corresponding tables in the MariaDB database.
 
             db.create_all()
+            print(db.engines)
 
             print("\nDatabase setup complete. All tables are ready.")
 

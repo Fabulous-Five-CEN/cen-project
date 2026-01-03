@@ -2,7 +2,7 @@ from flask import Flask, jsonify, redirect, request, url_for, session
 from .extensions import db, login_manager
 from .models import orm_objects
 from .models.orm_objects import User
-from .models.orm_objects_demo import DemoUser 
+import os
 
 # Import blueprints
 from .main import main_bp
@@ -24,10 +24,19 @@ def create_app(config_override=None):
     if config_override:
         app.config.update(config_override)
 
-    # Initialize extensions
-    db.init_app(app)
+    # --- DATABASE CONFIG ---
+    # Main persistent DB
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
 
-    demo_db.init_app(app)
+
+    # Optional SQLAlchemy settings
+    app.config.setdefault("SQLALCHEMY_TRACK_MODIFICATIONS", False)
+
+    # --- INIT EXTENSIONS ---
+    db.init_app(app)  # only one db instance for both databases
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+
 
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
@@ -36,12 +45,22 @@ def create_app(config_override=None):
     app.config.setdefault("TEMPLATES_AUTO_RELOAD", True)
     app.config.setdefault("DEBUG", True)
 
+
+    @app.context_processor
+    def inject_demo_mode():
+        return dict(DEMO_MODE=app.config["DEMO_MODE"])
+
+
     # Register blueprints
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(cards_bp, url_prefix="/cards")
     app.register_blueprint(sets_bp, url_prefix="/sets")
     app.register_blueprint(practice_bp, url_prefix="/practice")
+
+    print("DEMO_MODE:", app.config.get("DEMO_MODE"))
+    print("SQLALCHEMY_BINDS:", app.config.get("SQLALCHEMY_BINDS"))
+
 
     return app
 
@@ -51,8 +70,7 @@ def load_user(user_id):
     if not user_id:
         return None
     
-    if session.get("db") == "demo":
-        return demo_db.session.get(DemoUser, int(user_id))
+
     
     return db.session.get(User, int(user_id))
 
