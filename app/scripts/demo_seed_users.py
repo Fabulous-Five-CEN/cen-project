@@ -12,6 +12,9 @@ test_users = [
     {"email": "mohamed@test.com", "password": "password123", "display_name": "Mohamed"},
     {"email": "elizabeth@test.com", "password": "password123", "display_name": "Elizabeth"},
     {"email": "elik@test.com", "password": "password123", "display_name": "Elik"},
+    {"email": "matt@test.com", "password": "password123", "display_name": "Matt"},
+    {"email": "ronak@test.com", "password": "password123", "display_name": "Ronak"},
+    {"email": "luis@test.com", "password": "password123", "display_name": "José Luis"},
     {"email": "demo@test.com", "password": "password123", "display_name" : "Demo User"}
 ]
 

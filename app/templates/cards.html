@@ -9,38 +9,39 @@
 
       <div class="section-subtitle">Browse, search, and edit your phrase cards. Add your cards to sets.</div>
   </div>
-  
-    <div class="row align-items-center mb-3">
-      <div class="col-4"> 
-          <input id="searchCards" class="form-control" placeholder="Search cards…">
-      </div>
-    <div class="col-3">
-      <div class="dropdown w-100">
-        <button
-          class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
-          type="button"
-          id="filterBySetBtn"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-        >
-          Filter by set
-        </button>
+<div class="row align-items-center mb-3">
+  <!-- Search input -->
+  <div class="col-12 col-md-4 mb-2 mb-md-0">
+    <input id="searchCards" class="form-control" placeholder="Search cards…">
+  </div>
 
-        <div
-          class="dropdown-menu p-2 w-100"
-          style="max-height: 240px; overflow-y: auto;"
-          id="filterBySetMenu"
-        >
-        </div>
+  <!-- Dropdown -->
+  <div class="col-12 col-md-3 mb-2 mb-md-0">
+    <div class="dropdown w-100">
+      <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+              type="button"
+              id="filterBySetBtn"
+              data-bs-toggle="dropdown"
+              aria-expanded="false">
+        Filter by set
+      </button>
+      <div class="dropdown-menu p-2 w-100"
+           style="max-height: 240px; overflow-y: auto;"
+           id="filterBySetMenu">
       </div>
     </div>
+  </div>
 
-      <div class="col-auto"> 
-          <button class="btn btn-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#cardModal">
-              Add Card +
-          </button>
-      </div>
-    </div>
+  <!-- Add Card button -->
+  <div class="col-12 col-md-auto">
+    <button class="btn btn-primary rounded-pill w-100 w-md-auto"
+            data-bs-toggle="modal"
+            data-bs-target="#cardModal">
+      Add Card +
+    </button>
+  </div>
+</div>
+
 
     <div id="cardsGrid" class="row g-3"></div>
 
