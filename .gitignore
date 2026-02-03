@@ -12,4 +12,4 @@ docker/local/
 .vscode.*
 
 # Ignore the demo seeding script
-/app/scripts/demo_seed_users.py
+app/scripts/demo_seed_users.py
