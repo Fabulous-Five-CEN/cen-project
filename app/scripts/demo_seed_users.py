@@ -1,20 +1,26 @@
 import unittest
 from datetime import datetime
-
+import os
 from werkzeug.security import generate_password_hash
 
 from app import create_app, db
 from app.models import User
+from pathlib import Path
+
 
 test_users = [
-    {"email": "amanda@test.com", "password": "password123", "display_name": "Amanda"},
-    {"email": "juan@test.com", "password": "password123", "display_name": "Juan"},
-    {"email": "mohamed@test.com", "password": "password123", "display_name": "Mohamed"},
-    {"email": "elizabeth@test.com", "password": "password123", "display_name": "Elizabeth"},
-    {"email": "elik@test.com", "password": "password123", "display_name": "Elik"},
-    {"email": "matt@test.com", "password": "password123", "display_name": "Matt"},
-    {"email": "ronak@test.com", "password": "password123", "display_name": "Ronak"},
-    {"email": "luis@test.com", "password": "password123", "display_name": "José Luis"},
+    {"email": "amanda@test.com", "password": "password1234", "display_name": "Amanda"},
+    {"email": "juan@test.com", "password": "password1234", "display_name": "Juan"},
+    {"email": "mohamed@test.com", "password": "password1234", "display_name": "Mohamed"},
+    {"email": "elizabeth@test.com", "password": "password1234", "display_name": "Elizabeth"},
+    {"email": "elik@test.com", "password": "password1234", "display_name": "Elik"},
+    {"email": "matt@test.com", "password": "password1234", "display_name": "Matt"},
+    {"email": "ronak@test.com", "password": "password1234", "display_name": "Ronak"},
+    {"email": "luis@test.com", "password": "password1234", "display_name": "José Luis"},
+    {"email": "sierra@test.com", "password": "password1234", "display_name": "Sierra"},
+    {"email": "new@test.com", "password": "password1234", "display_name": "New"},
+    {"email": "john@test.com", "password": "password1234", "display_name": "John"},
+    {"email": "virginia@test.com", "password": "password1234", "display_name": "Virginia"},
     {"email": "demo@test.com", "password": "password123", "display_name" : "Demo User"}
 ]
 
