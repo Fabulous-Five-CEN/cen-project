@@ -83,6 +83,68 @@ Once running, access the app at `http://localhost:${APP_PORT}` (default `http://
 
 > **Note:** If you change environment variables or dependencies, rebuild with `docker-compose build` to capture the updates.
 
+## Demo Seed Users
+If using in APP_ENV = demo, it will call a file called "demo_seed_users.py".
+Add this file to app/scripts, and manually add in the usernames/passwords for your accounts.
+Creates default accounts, and the default "demo" account that gives a shared user login on the home page.
+
+demo_seed_users.py
+```
+import unittest
+from datetime import datetime
+import os
+from werkzeug.security import generate_password_hash
+
+from app import create_app, db
+from app.models import User
+from pathlib import Path
+
+
+test_users = [
+    {"email": "YOUR_USERNAME_HERE1", "password": "YOUR_PASSWORD_HERE1", "display_name": "NAME1"},
+    {"email": "YOUR_USERNAME_HERE2", "password": "YOUR_PASSWORD_HERE2", "display_name": "NAME2"},
+    {"email": "demo@test.com", "password": "password123", "display_name" : "Demo User"}
+]
+
+
+class SeedUsersTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = create_app()
+        cls.app_context = cls.app.app_context()
+        cls.app_context.push()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.app_context.pop()
+
+    def test_seed_users(self):
+        for u in test_users:
+            if not User.query.filter_by(email=u["email"]).first():
+                hashed_pw = generate_password_hash(u["password"])
+                user = User(
+                    email=u["email"],
+                    password_hash=hashed_pw,
+                    display_name=u.get("display_name"),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                db.session.add(user)
+        db.session.commit()
+
+        for u in test_users:
+            created = User.query.filter_by(email=u["email"]).first()
+            self.assertIsNotNone(created, f"User {u['email']} should exist after seeding")
+        print("Test users created successfully!")
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+```
+
+
 ## Additional Notes
 
 - Blueprint modules (`app/auth`, `app/cards`, etc.) keep routes organized by feature.
