@@ -123,3 +123,34 @@
       min-width: 60px; 
       text-align: center; 
     }
+
+.card-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 3rem;
+  line-height: 1;
+  color: #adb5bd;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  opacity: 0.7;
+  z-index: 10;
+}
+.card-nav:hover {
+  opacity: 1;
+  color: #6c757d; 
+}
+
+.card-nav:focus {
+  outline: none;
+}
+.card-nav-prev {
+  left: 0.5rem;
+}
+
+.card-nav-next {
+  right: 0.5rem;
+}
+

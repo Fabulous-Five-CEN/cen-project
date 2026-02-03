@@ -58,6 +58,16 @@
 
         <div class="modal-body d-flex flex-column justify-content-center align-items-center">
           <div class="practice-card-shell position-relative p-4 mx-auto" style="min-width: min(90%, 700px); min-height: 260px;">
+
+            <button
+              class="card-nav card-nav-prev"
+              id = "prevBtn"
+              aria-label="Previous card"
+              type="button"
+            >
+              ‹
+            </button>
+
             <div id="practiceCard" class="card-face">
               <!-- PRODUCTION: content is overwritten by JS; initial text is just fallback -->
               <div class="front">
@@ -76,6 +86,15 @@
                 <h3 id="backText" class="text-center">How are you?</h3>
               </div>
             </div>
+
+              <button
+              class="card-nav card-nav-next"
+              id = "nextBtn"
+              aria-label="Next card"
+              type="button"
+            >
+              ›
+            </button>
           </div>
         </div>
 
