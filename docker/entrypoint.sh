@@ -17,7 +17,6 @@ fi
 if [ "$APP_ENV" = "demo" ]; then
   echo "Demo environment detected; running seeders w/ demo..."
   python -m unittest app.scripts.demo_seed_users
-  python -m unittest app.scripts.seed_essential_vocab
 fi
 
 
