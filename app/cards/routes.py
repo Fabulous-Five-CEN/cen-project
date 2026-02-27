@@ -26,7 +26,7 @@ def cards_home():
     cards = (
         db.session.query(Card)
         .filter(or_(Card.user_id == user_id, Card.user_id.is_(None)))
-        .order_by(Card.created_at.desc())
+        .order_by(Card.id)        
         .all()
     )
 

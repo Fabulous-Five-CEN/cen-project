@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from flask import jsonify, render_template, request, redirect, url_for, current_app, session
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy.exc import IntegrityError
+from app.services.seed_vocab import seed_essential_vocab_for_user
 
 from datetime import datetime, timezone
 from app.extensions import db
@@ -146,6 +147,8 @@ def demo_login():
         Card.query.filter_by(user_id=demo_user.id).delete()
         SetTable.query.filter_by(user_id=demo_user.id).delete()
         PracticeHistory.query.filter_by(user_id=demo_user.id).delete()
+        seed_essential_vocab_for_user(demo_user)
+
         db.session.commit()
 
     login_user(demo_user, remember=False)  # do NOT persist login
